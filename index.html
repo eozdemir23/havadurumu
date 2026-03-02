@@ -3,198 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; style-src 'self' https: 'unsafe-inline'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data:;">
     <title>Weather Vision Pro - 2026</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="clear-day">
+
+<div class="video-container">
+    <video autoplay muted loop id="bgVideo" poster="https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?q=80&w=2000&auto=format&fit=crop">
+        <source src="" type="video/mp4">
+    </video>
+    <div class="video-overlay"></div>
+</div>
 
 <div class="nevruz-header">
     <div class="nevruz-content">
         <span class="nevruz-icon">🌸</span>
-        <p>21 Mart Nevruz Bayramı Kutlu Olsun! Baharın Gelişini Selamlıyoruz. 🔥</p>
-        <span class="nevruz-icon">🌱</span>
+        <p>21 Mart Nevruz Bayramı Kutlu Olsun! 🔥 🌱</p>
     </div>
 </div>
 
-<div class="glass-card">
-    <div class="search-box" style="position: relative; z-index: 10001;">
-        <input type="text" id="sehirInput" placeholder="Şehir ara..." oninput="sehirOnerileriGetir()">
-        <button onclick="verileriGetir()">🔍</button>
-        <div id="suggestions" class="suggestions-list"></div>
+<div class="glass-card main-container">
+    <div class="top-bar">
+        <div class="search-box">
+            <input type="text" id="sehirInput" placeholder="Şehir keşfet..." oninput="sehirOnerileriGetir()">
+            <button onclick="verileriGetir()"><i class="fas fa-search"></i></button>
+            <div id="suggestions" class="suggestions-list"></div>
+        </div>
+        <button id="favBtn" onclick="favoriEkle()" class="action-btn"><i class="far fa-star"></i></button>
+        <button onclick="paylas()" class="action-btn"><i class="fas fa-share-alt"></i></button>
     </div>
 
-    <div id="weatherDisplay">
-        <p id="liveTime" style="font-size: 13px; opacity: 0.7; margin-bottom: 5px; font-weight: 300;"></p>
-        <h1 id="sehirAd" class="city-name">YÜKLENİYOR...</h1>
-        <p id="derece" class="temp">0°</p>
-        
-        <div id="aqiBadge" class="aqi-tag">Hava Kalitesi: --</div>
-        <p id="durum" class="desc">---</p>
+    <div id="favBar" class="favorites-bar"></div>
 
-        <div class="chart-wrapper" style="margin-bottom: 20px;">
+    <div id="weatherDisplay">
+        <div class="main-info">
+            <p id="liveTime" class="time-stamp"></p>
+            <h1 id="sehirAd" class="city-name">YÜKLENİYOR...</h1>
+            <div class="temp-container">
+                <p id="derece" class="temp">0°</p>
+                <div id="weatherIcon" class="weather-icon-main"></div>
+            </div>
+            <p id="durum" class="desc">---</p>
+        </div>
+
+        <div class="health-panel">
+            <div class="aqi-section">
+                <span id="aqiBadge" class="aqi-tag">AQI: --</span>
+                <p id="healthAdvice" class="health-note">Veri alınıyor...</p>
+            </div>
+        </div>
+
+        <div class="section-title">📊 24 Saatlik Sıcaklık Değişimi</div>
+        <div class="chart-wrapper">
             <canvas id="weatherChart"></canvas>
         </div>
 
-        <div class="radar-container" id="radarParent" style="margin: 20px 0; position: relative; z-index: 1;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <p style="font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;">🛰️ Canlı Yağış Radarı</p>
-                <button onclick="toggleRadarFullscreen()" id="fsBtn" style="background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 5px; cursor: pointer; padding: 2px 8px; font-size: 14px;">⛶</button>
+        <div class="section-title">📅 5 Günlük Tahmin</div>
+        <div id="forecastContainer" class="forecast-row"></div>
+
+        <div class="radar-container" id="radarParent">
+            <div class="radar-header">
+                <span>🛰️ Canlı Yağış Radarı</span>
+                <button onclick="toggleRadarFullscreen()" id="fsBtn"><i class="fas fa-expand"></i></button>
             </div>
-            
-            <div id="map" style="height: 180px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);"></div>
-            
-            <div id="radarLegend" style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 9px; opacity: 0.6;">
-                <span>Hafif</span>
-                <div style="flex: 1; height: 4px; border-radius: 2px; background: linear-gradient(to right, #82eefd, #3b82f6, #ef4444, #7e22ce);"></div>
-                <span>Şiddetli</span>
-            </div>
+            <div id="map"></div>
         </div>
 
         <div class="details-grid">
-            <div class="detail-item"><p>Yağış Olasılığı</p><p id="rainChance">0%</p></div>
-            <div class="detail-item"><p>Rüzgar Hızı</p><p id="ruzgar">0 m/s</p></div>
-            <div class="detail-item"><p>Gün Doğumu</p><p id="sunrise">--:--</p></div>
-            <div class="detail-item"><p>Gün Batımı</p><p id="sunset">--:--</p></div>
-            <div class="detail-item"><p>Nem Oranı</p><p id="humidity">0%</p></div>
-            <div class="detail-item"><p>Hissedilen</p><p id="hissedilen">--°</p></div>
+            <div class="detail-item"><i class="fas fa-tint"></i><p>Yağış</p><p id="rainChance">0%</p></div>
+            <div class="detail-item"><i class="fas fa-wind"></i><p>Rüzgar</p><p id="ruzgar">0 m/s</p></div>
+            <div class="detail-item"><i class="fas fa-sun"></i><p>Doğuş</p><p id="sunrise">--:--</p></div>
+            <div class="detail-item"><i class="fas fa-moon"></i><p>Batış</p><p id="sunset">--:--</p></div>
+            <div class="detail-item"><i class="fas fa-water"></i><p>Nem</p><p id="humidity">0%</p></div>
+            <div class="detail-item"><i class="fas fa-thermometer-half"></i><p>Hissedilen</p><p id="hissedilen">--°</p></div>
         </div>
     </div>
 </div>
 
-<script>
-    let myChart = null;
-    let map = null;
-    const aqiLabels = ["Mükemmel", "İyi", "Orta", "Zayıf", "Kötü"];
-    const aqiColors = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6"];
-
-    function saatiGuncelle() {
-        const simdi = new Date();
-        const options = { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long' };
-        document.getElementById('liveTime').innerText = simdi.toLocaleDateString('tr-TR', options).toUpperCase();
-    }
-    setInterval(saatiGuncelle, 1000);
-
-    function haritayiGuncelle(lat, lon) {
-        if (map) { map.remove(); }
-        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([lat, lon], 7);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-        const API_KEY = 'db786facb4203f3d034f25e87e1bcf28';
-        L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${API_KEY}`, {
-            opacity: 0.8,
-            zIndex: 100
-        }).addTo(map);
-
-        L.circle([lat, lon], { color: '#3b82f6', radius: 3000, fillOpacity: 0.5 }).addTo(map);
-    }
-
-    function toggleRadarFullscreen() {
-        const el = document.getElementById('radarParent');
-        const mapEl = document.getElementById('map');
-        const btn = document.getElementById('fsBtn');
-
-        if (!el.classList.contains('fs-active')) {
-            el.classList.add('fs-active');
-            Object.assign(el.style, {
-                position: 'fixed', top: '0', left: '0', width: '100vw', height: '100vh',
-                zIndex: '9999', margin: '0', background: '#000', padding: '20px'
-            });
-            mapEl.style.height = '85vh';
-            btn.innerText = '✕';
-        } else {
-            el.classList.remove('fs-active');
-            el.style = "margin: 20px 0; position: relative; z-index: 1;";
-            mapEl.style.height = '180px';
-            btn.innerText = '⛶';
-        }
-        setTimeout(() => { if(map) map.invalidateSize(); }, 300);
-    }
-
-    async function verileriGetir() {
-        const sehir = document.getElementById('sehirInput').value || 'Diyarbakir';
-        try {
-            const res = await fetch(`${window.location.origin}/hava?sehir=${sehir}`);
-            const data = await res.json();
-            if(data.error) return;
-
-            const icon = data.current.weather[0].icon;
-            document.body.className = icon.includes('n') ? 'clear-night' : 'clear-day';
-
-            document.getElementById('sehirAd').innerText = data.current.name.toUpperCase();
-            document.getElementById('derece').innerText = Math.round(data.current.main.temp) + "°";
-            document.getElementById('durum').innerText = data.current.weather[0].description.toUpperCase();
-            document.getElementById('humidity').innerText = "%" + data.current.main.humidity;
-            document.getElementById('ruzgar').innerText = data.current.wind.speed + " m/s";
-            document.getElementById('hissedilen').innerText = Math.round(data.current.main.feels_like) + "°";
-            document.getElementById('rainChance').innerText = (data.forecast[0].pop * 100).toFixed(0) + "%";
-            
-            const formatTime = (ts) => new Date(ts * 1000).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
-            document.getElementById('sunrise').innerText = formatTime(data.current.sys.sunrise);
-            document.getElementById('sunset').innerText = formatTime(data.current.sys.sunset);
-
-            const aqiTag = document.getElementById('aqiBadge');
-            const aqiVal = data.aqi || 1;
-            aqiTag.innerText = "Hava Kalitesi: " + aqiLabels[aqiVal - 1];
-            aqiTag.style.color = aqiColors[aqiVal - 1];
-
-            grafikCiz(data.forecast);
-            haritayiGuncelle(data.current.coord.lat, data.current.coord.lon);
-        } catch (e) { console.error("Hata:", e); }
-    }
-
-    async function sehirOnerileriGetir() {
-        const input = document.getElementById('sehirInput');
-        const box = document.getElementById('suggestions');
-        if (input.value.length < 2) { box.innerHTML = ''; return; }
-
-        try {
-            const res = await fetch(`${window.location.origin}/search?q=${encodeURIComponent(input.value)}`);
-            const suggestions = await res.json();
-            box.innerHTML = suggestions.map(s => `
-                <div class="suggestion-item" onclick="onerilenSehriSec('${s.name}')">${s.display}</div>
-            `).join('');
-        } catch (e) { console.error("Öneri hatası:", e); }
-    }
-
-    function onerilenSehriSec(name) {
-        document.getElementById('sehirInput').value = name;
-        document.getElementById('suggestions').innerHTML = '';
-        verileriGetir();
-    }
-
-    function grafikCiz(forecastData) {
-        const labels = forecastData.map(item => item.dt_txt.split(" ")[1].substring(0, 5));
-        const temps = forecastData.map(item => Math.round(item.main.temp));
-        if (myChart) myChart.destroy();
-        const ctx = document.getElementById('weatherChart').getContext('2d');
-        myChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: temps,
-                    borderColor: '#fff',
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    pointRadius: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { ticks: {color:'#fff'} }, y: { display: false } }
-            }
-        });
-    }
-
-    window.onload = () => { verileriGetir(); saatiGuncelle(); };
-</script>
+<script src="script.js"></script>
 </body>
 </html>
