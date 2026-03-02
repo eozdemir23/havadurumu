@@ -1,33 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&display=swap');
 
-/* --- 1) DİNAMİK VİDEO ARKA PLAN SİSTEMİ --- */
-.video-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    overflow: hidden;
-}
-
-#bgVideo {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: opacity 1s ease-in-out;
-}
-
-.video-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.8) 100%);
-}
-
-/* --- GENEL AYARLAR --- */
 * {
     margin: 0;
     padding: 0;
@@ -36,59 +8,56 @@
 }
 
 body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    padding-top: 80px;
     overflow-x: hidden;
+    transition: background 0.5s ease;
 }
 
-/* --- NEVRUZ HEADER --- */
-.nevruz-header {
-    width: 100%;
-    background: rgba(16, 185, 129, 0.15);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 12px 0;
-    position: fixed;
-    top: 0;
-    z-index: 20000;
-    display: flex;
-    justify-content: center;
-    animation: slideDown 0.8s ease-out;
+/* Arka plandaki yuvarlak ışık efekti */
+body::before {
+    content: "";
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: rgba(59, 130, 246, 0.3);
+    filter: blur(100px);
+    border-radius: 50%;
+    top: -10%;
+    right: -10%;
+    z-index: -1;
 }
 
-/* --- ANA KONTEYNER --- */
-.main-container {
-    background: rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+/* Ana Cam Kart (Apple Glassmorphism) */
+.glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 40px;
     padding: 30px;
-    width: 480px;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+    width: 420px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    position: relative;
+    overflow: visible !important; /* Listenin taşmasına izin ver */
     animation: fadeInUp 0.8s ease-out;
 }
 
-/* --- ÜST PANEL (ARAMA & AKSİYONLAR) --- */
-.top-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
+/* --- ARAMA KUTUSU VE ÖNERİ LİSTESİ --- */
 .search-box {
-    flex: 1;
     display: flex;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 20px;
-    padding: 10px 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px 20px;
+    margin-bottom: 25px;
     position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 10001; /* Her şeyin üstünde olmalı */
 }
 
 .search-box input {
@@ -97,135 +66,240 @@ body {
     color: white;
     outline: none;
     width: 100%;
-    font-size: 15px;
+    font-size: 16px;
 }
 
-.action-btn {
-    background: rgba(255, 255, 255, 0.1);
+.search-box button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.suggestions-list {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    right: 0;
+    background: rgba(30, 41, 59, 0.98); /* Opaklaştırıldı */
+    backdrop-filter: blur(20px);
+    border-radius: 15px;
+    z-index: 10002; /* Input'tan da üstte */
+    max-height: 250px;
+    overflow-y: auto;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    padding: 10px 15px;
-    border-radius: 18px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+}
+
+.suggestion-item {
+    padding: 12px 20px;
     cursor: pointer;
-    transition: all 0.3s;
-}
-
-.action-btn:hover { background: rgba(255,255,255,0.2); }
-
-/* --- FAVORİLER BAR --- */
-.favorites-bar {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    margin-bottom: 20px;
-    padding-bottom: 5px;
-}
-
-.fav-item {
-    background: rgba(255,255,255,0.1);
-    padding: 6px 15px;
-    border-radius: 30px;
-    font-size: 12px;
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-/* --- SAĞLIK PANELİ --- */
-.health-panel {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 25px;
-    padding: 20px;
-    margin: 20px 0;
     text-align: left;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.aqi-tag {
-    font-weight: 600;
     font-size: 14px;
-    padding: 4px 12px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.1);
+    transition: all 0.2s;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: white;
 }
 
-.health-note {
-    margin-top: 10px;
-    font-size: 13px;
-    opacity: 0.9;
-    line-height: 1.4;
+.suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    padding-left: 25px;
 }
 
-/* --- HAFTALIK TAHMİN (SCROLLABLE ROW) --- */
-.section-title {
-    text-align: left;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    opacity: 0.5;
-    margin: 15px 0 10px 5px;
+/* --- YAZI VE DERECE STİLLERİ --- */
+.city-name { font-size: 32px; font-weight: 300; letter-spacing: 1px; position: relative; z-index: 1; }
+.temp { 
+    font-size: 90px; 
+    font-weight: 200; 
+    margin: 10px 0;
+    background: linear-gradient(to bottom, #ffffff 30%, #94a3b8 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: block;
+    position: relative;
+    z-index: 1; /* Arama listesinin altında kalması için */
 }
 
-.forecast-row {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-}
-
-.forecast-card {
-    background: rgba(255,255,255,0.05);
-    min-width: 85px;
-    padding: 15px 10px;
-    border-radius: 20px;
-    text-align: center;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-.forecast-card img { width: 35px; }
-
-/* --- RADAR --- */
+/* --- RADAR VE TAM EKRAN TASARIMI --- */
 .radar-container {
-    background: rgba(0,0,0,0.2);
-    border-radius: 25px;
-    padding: 15px;
-    margin-top: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 24px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #map {
-    height: 150px;
-    border-radius: 18px;
-    filter: grayscale(0.2) invert(1) contrast(0.9); /* Dark map effect */
+    width: 100%;
+    transition: height 0.4s ease;
+    z-index: 1; /* Yağış katmanı JS içinde zIndex: 100 ile bunun üstüne çıkacak */
 }
 
-/* --- DETAYLAR --- */
+/* Tam Ekran Aktif Sınıfı */
+.radar-container.fs-active {
+    position: fixed !important;
+    top: 0; left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: #000 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* --- DETAY IZGARASI --- */
 .details-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 20px;
+    gap: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 25px;
+    margin-top: 15px;
 }
 
 .detail-item {
-    background: rgba(255,255,255,0.03);
-    padding: 15px 5px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px 10px;
     border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.detail-item i { font-size: 14px; margin-bottom: 8px; opacity: 0.6; }
-.detail-item p:last-child { font-weight: 600; margin-top: 4px; }
+/* Hava Durumu Modları */
+body.clear-day { background: linear-gradient(135deg, #00b4db, #0083b0); }
+body.clear-night { background: linear-gradient(135deg, #2c3e50, #000000); }
 
-/* --- ANİMASYONLAR --- */
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- MOBİL UYUMLULUK --- */
-@media (max-width: 480px) {
-    .main-container { width: 95%; padding: 20px; }
-    .temp { font-size: 70px; }
-    .details-grid { grid-template-columns: repeat(2, 1fr); }
+
+.nevruz-header {
+    width: 100%;
+    background: rgba(16, 185, 129, 0.2); /* Yeşil tonlu cam efekti */
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px 0;
+    position: fixed; /* Sayfanın en üstünde sabit kalsın */
+    top: 0;
+    left: 0;
+    z-index: 20000; /* Her şeyin (radar dahil) üstünde olması için */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: slideDown 0.8s ease-out;
 }
 
-::-webkit-scrollbar { height: 4px; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+.nevruz-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nevruz-content p {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin: 0;
+}
+
+.nevruz-icon {
+    font-size: 18px;
+    animation: flowerBounce 2s infinite ease-in-out;
+}
+
+/* Header içeri kayarak gelsin */
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
+
+/* Çiçekler hafifçe sallansın */
+@keyframes flowerBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2) rotate(10deg); }
+}
+
+/* Header sabit olduğu için ana kartın üzerine binmemesi için body'ye boşluk ver */
+body {
+    padding-top: 80px !important;
+}
+
+/* Mobilde yazı boyutunu ayarla */
+@media (max-width: 480px) {
+    .nevruz-content p {
+        font-size: 11px;
+        text-align: center;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- RESPONSIVE (MOBİL VE TABLET) UYUMLULUK --- */
+
+/* 1. Bilgisayar ve Geniş Ekranlar */
+@media (min-width: 1024px) {
+    .glass-card {
+        width: 480px; 
+        padding: 40px;
+    }
+}
+
+/* 2. Tabletler (iPad vb.) */
+@media (max-width: 1024px) {
+    .glass-card {
+        width: 90%; 
+        max-width: 450px;
+    }
+}
+
+/* 3. Telefonlar (iPhone, Samsung vb.) */
+@media (max-width: 480px) {
+    body {
+        padding: 15px;
+        align-items: center; /* Mobilde kartı ortala */
+    }
+
+    .glass-card {
+        width: 100%;
+        border-radius: 30px; 
+        padding: 20px;
+        margin: 10px;
+    }
+
+    .temp {
+        font-size: 70px; /* Mobilde derece biraz küçülsün */
+    }
+
+    /* Detay kutucuklarını mobilde 2 sütuna düşür */
+    .details-grid {
+        grid-template-columns: repeat(2, 1fr) !important; 
+        gap: 10px;
+    }
+
+    #map {
+        height: 150px; /* Mobilde harita biraz daha basık olsun */
+    }
+}
+
+/* 4. Çok Küçük Ekranlar (iPhone SE vb.) */
+@media (max-width: 360px) {
+    .temp { font-size: 55px; }
+    .details-grid { grid-template-columns: 1fr !important; } /* Tek sütuna düş */
+}

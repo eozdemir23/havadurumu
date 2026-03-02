@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Weather OS</title>
+    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Admin Paneline Özel Ek Stiller */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        .admin-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+        .status-pill {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: var(--main-theme);
+            float: right;
+        }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-size: 14px; opacity: 0.7; }
+        select, input[type="range"] { width: 100%; cursor: pointer; }
+    </style>
+</head>
+<body class="admin-page">
+    <div class="video-container">
+        <div class="video-overlay" style="background: linear-gradient(135deg, #0f172a 0%, #020617 100%);"></div>
+    </div>
+
+    <main class="glass-card main-container">
+        <div class="top-bar">
+            <h2 style="font-weight: 200;"><i class="fas fa-user-shield"></i> System Control Center</h2>
+            <button onclick="window.location.href='index.html'" class="action-btn"><i class="fas fa-home"></i> Geri Dön</button>
+        </div>
+
+        <div class="admin-grid">
+            <div class="admin-card">
+                <h3><i class="fab fa-spotify"></i> Music Logic Editor</h3>
+                <p style="font-size: 12px; opacity: 0.5; margin-bottom: 20px;">Hava durumuna göre otomatik çalacak listeler.</p>
+                
+                <div class="control-group">
+                    <label>Güneşli Hava Playlist</label>
+                    <select id="sunny-list" onchange="saveAdminConfig()">
+                        <option value="37i9dQZF1DX3rxVfibe1L0">Sunny Day Hits</option>
+                        <option value="37i9dQZF1DX4uJUv7v9o0T">Summer Vibes</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Yağmurlu Hava Playlist</label>
+                    <select id="rainy-list" onchange="saveAdminConfig()">
+                        <option value="37i9dQZF1DXat9LbNxY983">Rainy Day Jazz</option>
+                        <option value="37i9dQZF1DWSfMe9z79TYB">Lo-fi Garden</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <h3><i class="fas fa-robot"></i> AI Personality</h3>
+                <div class="control-group">
+                    <label>Konuşma Tonu</label>
+                    <select id="ai-tone" onchange="saveAdminConfig()">
+                        <option value="professional">Profesyonel / Ciddi</option>
+                        <option value="sarcastic">Esprili / Alaycı</option>
+                        <option value="motivator">Motive Edici</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>AI Yanıt Uzunluğu</label>
+                    <input type="range" min="1" max="100" value="50">
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <h3><i class="fas fa-palette"></i> Visual Lab</h3>
+                <div class="control-group">
+                    <label>Glassmorphism Blur Şiddeti</label>
+                    <input type="range" id="blur-range" min="0" max="100" value="60" oninput="updateLivePreview()">
+                </div>
+                <div class="control-group">
+                    <label>Neon Işık Gücü</label>
+                    <input type="range" id="glow-range" min="0" max="100" value="40" oninput="updateLivePreview()">
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <span class="status-pill">Live</span>
+                <h3><i class="fas fa-chart-line"></i> API & Traffic</h3>
+                <div style="margin-top: 20px;">
+                    <p style="font-size: 13px;">OpenWeather Usage: <span style="color: var(--main-theme);">84%</span></p>
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 5px;">
+                        <div style="width: 84%; height: 100%; background: var(--main-theme); border-radius: 10px;"></div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <p style="font-size: 13px;">En Çok Aranan: <strong>İstanbul, London</strong></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="admin.js"></script>
+</body>
+</html>
