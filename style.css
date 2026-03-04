@@ -1,220 +1,350 @@
-/* WeatherOS v3.0 - Apple Style Redesign */
+/* WeatherOS v3.0 - Apple Style Redesign (Official Stable Build) */
+
 :root {
-  /* Renk Paleti - Apple tarzı derin maviler */
-  --os-bg-1: #091a3c; /* Daha koyu, derin lacivert */
-  --os-bg-2: #1c325f; /* Hafif daha açık, doygun mavi */
-  --os-accent: #a855f7; /* Sen moru sevdin, bu daha parlak ve canlı bir mor */
-  --os-glass-bg: rgba(255, 255, 255, 0.03); /* Çok ince cam efekti */
-  --os-glass-blur: 25px; /* Yüksek bulanıklık */
-  --os-border: rgba(255, 255, 255, 0.08); /* Çok ince kenarlık */
-  --os-radius: 32px; /* Apple tarzı yumuşak köşeler */
-  --os-gap: 20px; /* Kutular arası boşluk */
+  --os-bg-1: #091a3c;
+  --os-bg-2: #1c325f;
+  --os-accent: #a855f7;
+  --os-glass: rgba(255, 255, 255, 0.04);
+  --os-glass-strong: rgba(15, 23, 42, 0.85);
+  --os-border: rgba(255, 255, 255, 0.1);
+  --os-radius: 32px;
   --os-text-main: #ffffff;
-  --os-text-dim: rgba(255, 255, 255, 0.6); /* Soluk metin rengi */
+  --os-text-dim: rgba(255, 255, 255, 0.55);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
 
 body {
   background: radial-gradient(circle at top right, var(--os-bg-2), var(--os-bg-1));
   background-attachment: fixed;
   min-height: 100vh;
   color: var(--os-text-main);
-  padding: 40px 20px 140px 20px;
+  /* Yanlardaki 20px olan boşluğu %10 yaparak içeriği merkeze ittik */
+  padding: 60px 10% 160px 10%; 
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Geniş ekranlarda kutu yığınını ortalar */
 }
 
-/* --- BENTO GRID KONTEYNER --- */
+/* --- BENTO GRID SYSTEM --- */
 .bento-container {
-  display: grid;
-  max-width: 1000px; /* Daha kompakt bir görünüm */
-  margin: 0 auto;
-  gap: var(--os-gap);
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-areas: 
-    "hero hero radar radar"
-    "hero hero chart chart"
-    "wellness stats stats stats"
-    "forecast forecast forecast forecast";
+    display: grid;
+    /* Kutuların çok yayılmaması için ideal genişlik */
+    max-width: 1050px; 
+    width: 100%;
+    margin: 0 auto;
+    gap: 25px; /* Kutular arası nefes alma payı */
+    grid-template-columns: repeat(4, 1fr); 
+    grid-template-areas: 
+        "hero hero radar radar"
+        "hero hero chart chart"
+        "wellness stats stats stats"
+        "forecast forecast forecast forecast";
 }
 
-/* Tüm Kutuların Temel Stili */
 .glass-tile {
-  background: var(--os-glass-bg);
-  backdrop-filter: blur(var(--os-glass-blur));
-  -webkit-backdrop-filter: blur(var(--os-glass-blur));
+  background: var(--os-glass);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   border: 1px solid var(--os-border);
   border-radius: var(--os-radius);
   padding: 24px;
-  display: flex;
-  flex-direction: column;
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.glass-tile:hover {
-  transform: translateY(-3px); /* Hafif hover efekti */
-  border-color: rgba(255, 255, 255, 0.15);
+.glass-tile:hover { transform: translateY(-4px); }
+
+/* Forecast Tile Özel Padding */
+.bento-container > .glass-tile:last-child {
+  padding: 20px 15px;
 }
 
-/* Kutuların Üst Etiketleri (Örn: "CANLI RADAR") */
 .tile-label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--os-text-dim);
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 16px;
+  letter-spacing: 1.2px;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-/* --- HERO BÖLGESİ (Ana Widget) --- */
+/* --- HERO SECTION --- */
 .hero-section {
   grid-area: hero;
+  display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  min-height: 340px;
+  min-height: 360px;
 }
 
-.hero-top { display: flex; flex-direction: column; }
-.live-clock { font-size: 14px; font-weight: 600; opacity: 0.6; }
-.os-city { font-size: 36px; font-weight: 300; margin-top: 8px; }
-.os-temp { font-size: 96px; font-weight: 200; line-height: 1; margin: 15px 0 10px 0; letter-spacing: -4px; }
-.os-condition { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+.live-clock { font-size: 14px; font-weight: 700; color: var(--os-text-dim); }
+.os-city { font-size: 38px; font-weight: 300; letter-spacing: -0.5px; }
+.os-temp { font-size: 100px; font-weight: 200; line-height: 0.9; margin: 15px 0; letter-spacing: -5px; }
+.os-condition { font-size: 16px; font-weight: 600; text-transform: uppercase; color: var(--os-text-dim); }
 
-/* AQI Bar (Yenilendi) */
-.aqi-container { margin-top: auto; padding-top: 20px; }
-.aqi-pill { font-size: 10px; font-weight: 800; margin-bottom: 10px; color: var(--os-text-dim); }
+/* --- AQI BAR --- */
+.aqi-container { margin-top: auto; }
+.aqi-pill { font-size: 10px; font-weight: 800; margin-bottom: 8px; color: var(--os-text-dim); }
 .aqi-bar-bg { height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden; }
-#aqi-progress { height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease; }
+#aqi-progress { height: 100%; width: 0%; border-radius: 3px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
 
-/* --- RADAR & CHART --- */
-.radar-section { grid-area: radar; }
-#map { flex: 1; border-radius: 20px; margin-top: 8px; filter: grayscale(1) invert(1) opacity(0.6); /* Koyu harita filtresi */ }
+/* --- RADAR SECTION --- */
+.radar-section { grid-area: radar; position: relative; padding: 0; }
+#map { 
+    width: 100%; 
+    height: 100%; 
+    min-height: 220px;
+    border-radius: var(--os-radius);
+    background: #0b152d;
+}
 
+.leaflet-tile-pane { filter: grayscale(1) invert(1) opacity(0.6); }
+
+.radar-action-btn {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px 24px;
+  border-radius: 25px;
+  font-weight: 800;
+  font-size: 11px;
+  z-index: 1000;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* --- CHART SECTION --- */
 .chart-section { grid-area: chart; }
-.chart-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; }
-#weatherChart { width: 100%; height: 100%; }
+.chart-wrapper { flex: 1; min-height: 180px; width: 100%; }
 
-/* --- İSTATİSTİKLER (Grid İçinde Grid) --- */
+/* --- STATS GRID --- */
 .stats-grid-container {
-  grid-area: stats;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+    grid-area: stats; /* Alanı tanımla */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 stat kutusunu yan yana diz */
+    gap: 12px;
+}
+
+.wellness-section {
+    grid-area: wellness;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .stat-item {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--os-glass);
   border: 1px solid var(--os-border);
-  border-radius: 20px;
-  padding: 16px;
+  border-radius: 22px;
+  padding: 18px;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  backdrop-filter: blur(10px);
 }
 
-.stat-item span { display: block; font-size: 10px; color: var(--os-text-dim); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
-.stat-item p { font-size: 18px; font-weight: 600; color: white; }
+.stat-item span { display: block; font-size: 10px; font-weight: 800; color: var(--os-text-dim); text-transform: uppercase; margin-bottom: 6px; }
+.stat-item p { font-size: 18px; font-weight: 600; }
 
-/* --- ANALİZ & TAHMİN --- */
-.wellness-section { grid-area: wellness; }
-#suggestionText { font-size: 13px; font-weight: 400; color: var(--os-text-dim); line-height: 1.6; }
+/* --- HAFTALIK ÖZET (GÜNCELLENDİ) --- */
+#weeklyForecast {
+    display: flex;
+    flex-direction: row; 
+    gap: 12px;
+    width: auto;           /* 100% yaparsan grid alanına yayılmaya çalışır, auto kalsın */
+    overflow: hidden;      /* Kaydırmayı kapatıyoruz çünkü 5 gün zaten sığıyor */
+    padding: 10px 0;
+    justify-content: flex-start;
+}
 
-.forecast-section { grid-area: forecast; }
-.forecast-row { display: flex; justify-content: space-around; gap: 10px; padding: 10px 0; }
-.forecast-item { flex: 1; text-align: center; }
-.forecast-item span { font-size: 10px; font-weight: 800; color: var(--os-text-dim); }
-.forecast-item img { filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
-.forecast-item p { font-size: 16px; font-weight: 600; margin-top: 2px; }
+/* Chrome ve Safari'de scrollbar'ı tamamen gizlemek için */
+#weeklyForecast::-webkit-scrollbar { 
+    display: none; 
+}
 
-/* --- ALT NAV (KAYMALARI BİTİREN YAPISAL ÇÖZÜM) --- */
+
+.forecast-section {
+    grid-area: forecast;
+    /* KRİTİK AYARLAR: */
+    width: fit-content !important;   /* İçindeki kartlar bittiği an kutuyu keser */
+    min-width: 520px;                /* 5 günün ferah durması için taban genişlik */
+    margin-left: 0;                  /* Analiz hizasına çiviler */
+    display: flex;
+    flex-direction: column;
+    padding: 24px !important;
+    background: var(--os-glass);
+    border-radius: var(--os-radius);
+    border: 1px solid var(--os-border);
+}
+
+.forecast-item {
+    flex: 0 0 92px;                /* Genişliği hafif ayarladım ki 530px içine tam otursun */
+    min-height: 130px;        
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between; 
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    padding: 15px 10px;
+    border: 1px solid var(--os-border);
+    transition: all 0.2s ease;
+}
+
+.forecast-item:hover { 
+    background: rgba(255, 255, 255, 0.08); 
+    transform: scale(1.02); 
+}
+
+.forecast-day { 
+    font-size: 11px; 
+    font-weight: 800; 
+    color: var(--os-text-dim); 
+    text-transform: uppercase; 
+}
+
+.forecast-icon { 
+    margin: 8px 0; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+.forecast-icon img { 
+    width: 40px; 
+    height: 40px; 
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); 
+}
+
+.forecast-temp { 
+    font-size: 18px; 
+    font-weight: 800; 
+    color: #ffffff; 
+}
+
+/* --- FIXED BOTTOM NAV --- */
 .bottom-nav {
   position: fixed;
-  bottom: 25px; left: 50%; transform: translateX(-50%);
-  width: 90%; max-width: 400px; height: 75px;
-  background: rgba(15, 23, 42, 0.7);
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 420px;
+  height: 80px;
+  background: var(--os-glass-strong);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid var(--os-border);
-  border-radius: 38px;
-  display: flex; align-items: center; justify-content: space-around;
-  z-index: 10000;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-  padding: 0 10px;
-}
-
-/* İkon ve Metin Konteyneri */
-.nav-item {
+  border-radius: 40px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center; /* İkon ve metni dikeyde tam ortalar */
-  cursor: pointer;
-  height: 100%;
-  flex: 1;
+  justify-content: space-around;
+  z-index: 9999;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
 }
 
-.nav-icon { font-size: 20px; margin-bottom: 3px; color: rgba(255, 255, 255, 0.5); transition: 0.2s; }
-.nav-text { font-size: 9px; font-weight: 700; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 0.5px; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.nav-icon { font-size: 22px; opacity: 0.5; transition: 0.3s; }
+.nav-text { font-size: 9px; font-weight: 800; opacity: 0.5; text-transform: uppercase; margin-top: 2px; }
+.nav-item:hover .nav-icon, .nav-item:hover .nav-text { opacity: 1; color: var(--os-accent); }
 
-/* Hover ve Aktif Durum */
-.nav-item:hover .nav-icon, .nav-item:hover .nav-text { color: white; opacity: 1; }
-
-/* Merkeze Taşınan Mor Arama Butonu */
-.search-wrapper { position: relative; overflow: visible !important; }
-
+/* Search Center Button */
+.search-wrapper { overflow: visible !important; position: relative; }
 .search-circle {
-  width: 65px; height: 65px;
+  width: 68px; height: 68px;
   background: linear-gradient(135deg, var(--os-accent), #6366f1);
   border-radius: 50%;
-  display: flex; justify-content: center; align-items: center;
-  font-size: 26px; color: white;
   position: absolute;
-  top: -42px; /* Dışarı taşıma oranı */
-  left: 50%; transform: translateX(-50%);
-  border: 6px solid var(--os-bg-1); /* Ana arka plan rengiyle aynı */
-  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.5);
-  transition: transform 0.2s ease;
+  top: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border: 6px solid #0b152d;
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
 }
+.search-label { margin-top: 40px; font-size: 9px; font-weight: 900; color: var(--os-accent); }
 
-.search-wrapper:active .search-circle { transform: translateX(-50%) scale(0.9); }
-
-/* Metin etiketini halkanın tam altına iten kritik fix */
-.search-label { margin-top: 36px; font-size: 9px; font-weight: 800; color: var(--os-accent); letter-spacing: 0.5px; text-transform: uppercase; }
-
-/* MODALLAR */
-.modal {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  display: none; justify-content: center; align-items: center; z-index: 20000;
+/* --- MODAL --- */
+.search-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(25px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
 }
 
 .modal-content {
   width: 90%; max-width: 400px;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid var(--os-border);
-  border-radius: 28px; padding: 25px;
+  background: rgba(30, 41, 59, 0.85);
+  border-radius: 30px;
+  padding: 30px;
+  text-align: center;
 }
 
 #sehirInput {
-  width: 100%; padding: 15px 18px; border-radius: 16px;
-  background: rgba(255,255,255,0.06); border: none; color: white; outline: none; font-size: 16px;
+  width: 100%; padding: 18px; border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--os-border);
+  color: white; margin-bottom: 15px; outline: none;
 }
 
-/* RESPONSIVE (Mobil Uyumluluk) */
-@media (max-width: 768px) {
+.suggestions-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+}
+
+.close-btn {
+    background: var(--os-accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 15px;
+    margin-top: 15px;
+    cursor: pointer;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 800px) {
   .bento-container {
     grid-template-areas: 
-      "hero"
-      "radar"
-      "chart"
-      "stats"
-      "wellness"
-      "forecast";
-    grid-template-columns: 1fr;
+      "hero hero"
+      "radar radar"
+      "chart chart"
+      "stats stats"
+      "wellness wellness"
+      "forecast forecast";
+    grid-template-columns: 1fr 1fr;
   }
-  .stats-grid-container { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stats-grid-container { grid-template-columns: repeat(2, 1fr); }
+  body { padding-top: 20px; }
+}
+
+@media (max-width: 500px) {
+  .bento-container { 
+    grid-template-columns: 1fr; 
+    grid-template-areas: "hero" "radar" "chart" "stats" "wellness" "forecast"; 
+  }
+  .os-temp { font-size: 80px; }
+  .forecast-item { flex: 0 0 85px; min-height: 120px; }
 }

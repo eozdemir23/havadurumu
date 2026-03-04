@@ -26,9 +26,10 @@ app.get('/hava', async (req, res) => {
         if (lat && lon) {
             currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=tr`;
         } else {
-            const searchCity = sehir || 'Istanbul';
-            currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(searchCity)}&appid=${API_KEY}&units=metric&lang=tr`;
-        }
+    const cleanCity = sehir.split(',')[0].split(' ')[0].trim();
+    const searchCity = cleanCity || 'Istanbul';
+    currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(searchCity)}&appid=${API_KEY}&units=metric&lang=tr`;
+}
 
         const currentRes = await axios.get(currentUrl);
         const { lat: cLat, lon: cLon } = currentRes.data.coord;
@@ -79,6 +80,24 @@ app.get('/search', async (req, res) => {
     } catch (e) {
         console.error("Search API Error:", e.message);
         res.status(500).json([]);
+    }
+});
+
+// server.js içindeki radar-data rotasını bu blokla tamamen değiştir:
+app.get('/radar-data', async (req, res) => {
+    try {
+        const rvRes = await axios.get('https://api.rainviewer.com/v2/radar', { timeout: 5000 });
+        
+        // Verinin nerede olduğunu kontrol et (v2/v3 uyumluluğu için)
+        const radarData = rvRes.data.radar || rvRes.data;
+        const pastData = radarData.past || [];
+        
+        const timestamps = pastData.map(item => item.time);
+        res.json(timestamps); 
+
+    } catch (error) {
+        console.error("❌ Radar Sync Error:", error.message);
+        res.json([]); 
     }
 });
 
