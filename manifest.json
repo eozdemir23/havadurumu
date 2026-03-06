@@ -1,0 +1,21 @@
+{
+  "name": "WeatherOS Hava Durumu",
+  "short_name": "WeatherOS",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#091a3c",
+  "theme_color": "#091a3c",
+  "description": "Dinamik hava durumunu bir web uygulaması.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
