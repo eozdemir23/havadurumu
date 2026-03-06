@@ -17,41 +17,55 @@ const API_KEY = 'db786facb4203f3d034f25e87e1bcf28';
 
 // 1. ANA HAVA DURUMU MOTORU
 app.get('/hava', async (req, res) => {
+    // 1. Parametreleri alıyoruz (lat/lon veya sehir)
     const { sehir, lat, lon } = req.query;
-    
+    const API_KEY = "db786facb4203f3d034f25e87e1bcf28"; // API KEY'in burada tanımlı olduğundan emin ol
+
     try {
         let currentUrl;
         
-        // Dinamik Kaynak Belirleme (Koordinat vs Şehir)
-        if (lat && lon) {
+        // 2. Dinamik Kaynak Belirleme
+        if (lat && lon && lat !== "undefined" && lon !== "undefined") {
+            // Koordinat varsa (Örn: Konum izni verildiğinde)
             currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=tr`;
         } else {
-    const cleanCity = sehir.split(',')[0].split(' ')[0].trim();
-    const searchCity = cleanCity || 'Istanbul';
-    currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(searchCity)}&appid=${API_KEY}&units=metric&lang=tr`;
-}
+            // Şehir ismi varsa veya varsayılan Istanbul
+            const rawCity = sehir || 'Istanbul';
+            const searchCity = rawCity.split(',')[0].trim();
+            currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(searchCity)}&appid=${API_KEY}&units=metric&lang=tr`;
+        }
 
+        // 3. Mevcut Hava Durumunu Çek
         const currentRes = await axios.get(currentUrl);
-        const { lat: cLat, lon: cLon } = currentRes.data.coord;
+        
+        // OpenWeather bazen 'coord' objesini farklı seviyede dönebilir, güvenli alalım
+        const cLat = currentRes.data.coord.lat;
+        const cLon = currentRes.data.coord.lon;
 
-        // PARALEL VERİ ÇEKİMİ (Performance Boost)
-        // Hava kalitesi ve tahmin verilerini aynı anda çekerek yanıt süresini %50 düşürüyoruz.
+        // 4. PARALEL VERİ ÇEKİMİ
         const [aqiRes, forecastRes] = await Promise.all([
             axios.get(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${cLat}&lon=${cLon}&appid=${API_KEY}`),
             axios.get(`https://api.openweathermap.org/data/2.5/forecast?lat=${cLat}&lon=${cLon}&appid=${API_KEY}&units=metric&lang=tr`)
         ]);
 
-        // Veri Paketleme (WeatherOS Standart Formatı)
+        // 5. Veri Paketleme (WeatherOS Standart Formatı)
         res.json({
             current: currentRes.data,
             aqi: aqiRes.data.list[0].main.aqi,
-            forecast: forecastRes.data.list.slice(0, 8), // İlk 24 saat
-            fullForecast: forecastRes.data.list // 5 günlük tam liste
+            forecast: forecastRes.data.list.slice(0, 8),
+            fullForecast: forecastRes.data.list
         });
 
     } catch (error) {
-        console.error("WeatherOS Server Error:", error.message);
-        res.status(404).json({ error: "Sistem veriye ulaşamadı. Lütfen bağlantınızı kontrol edin." });
+        // Hata ayıklama için konsola detay yazdır
+        console.error("WeatherOS Server Error Detayı:", error.response ? error.response.data : error.message);
+        
+        // 404 yerine daha açıklayıcı bir hata dönelim
+        const statusCode = error.response ? error.response.status : 500;
+        res.status(statusCode).json({ 
+            error: "Hava durumu verisi alınamadı.",
+            detail: error.message 
+        });
     }
 });
 
@@ -83,21 +97,32 @@ app.get('/search', async (req, res) => {
     }
 });
 
-// server.js içindeki radar-data rotasını bu blokla tamamen değiştir:
+
+let lastValidRadarTimestamps = [];
+
 app.get('/radar-data', async (req, res) => {
     try {
-        const rvRes = await axios.get('https://api.rainviewer.com/v2/radar', { timeout: 5000 });
+        // RainViewer API bazen yavaş olduğu için timeout'u 8 saniyeye çıkardım
+        const rvRes = await axios.get('https://api.rainviewer.com/public/maps.json', { timeout: 8000 });
         
-        // Verinin nerede olduğunu kontrol et (v2/v3 uyumluluğu için)
-        const radarData = rvRes.data.radar || rvRes.data;
-        const pastData = radarData.past || [];
+        // RainViewer maps.json direkt dizi (array) döndürür
+        if (Array.isArray(rvRes.data) && rvRes.data.length > 0) {
+            lastValidRadarTimestamps = rvRes.data; // Veri sağlamsa önbelleğe al
+            return res.json(rvRes.data);
+        }
         
-        const timestamps = pastData.map(item => item.time);
-        res.json(timestamps); 
+        throw new Error("Boş veri döndü");
 
     } catch (error) {
-        console.error("❌ Radar Sync Error:", error.message);
-        res.json([]); 
+        console.warn("⚠️ Radar API Gecikmesi:", error.message);
+        
+        // Eğer API boş dönerse veya hata verirse son başarılı veriyi gönder
+        if (lastValidRadarTimestamps.length > 0) {
+            console.log("🔄 Önbellekteki eski radar verisi servis ediliyor.");
+            return res.json(lastValidRadarTimestamps);
+        }
+        
+        res.json([]); // Hiç veri yoksa boş dön
     }
 });
 
