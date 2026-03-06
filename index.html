@@ -33,18 +33,32 @@
 
     <main class="bento-container">
         <section class="glass-tile hero-section">
-            <div id="liveTime" class="live-clock">00:00</div>
-            <h1 id="sehirAd" class="os-city">LOKASYON ALINIYOR...</h1>
-            <div id="derece" class="os-temp">--°</div>
-            <p id="durum" class="os-condition">Yükleniyor</p>
-            
-            <div class="aqi-container">
-                <div id="aqiBadge" class="aqi-pill">HAVA KALİTESİ: <span id="aqi-status-text">İYİ</span></div>
-                <div class="aqi-bar-bg">
-                    <div id="aqi-progress" class="indicator-dot"></div>
-                </div>
-            </div>
-        </section>
+    <div class="hero-top" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+        <div id="liveTime" class="live-clock">00:00</div>
+        <button onclick="toggleCityManager()" style="background: none; border: none; color: var(--os-text-dim); cursor: pointer; font-size: 18px;">
+            <i class="fas fa-list-ul"></i>
+        </button>
+    </div>
+    <h1 id="sehirAd" class="os-city">LOKASYON ALINIYOR...</h1>
+    <div id="derece" class="os-temp">--°</div>
+    <p id="durum" class="os-condition">Yükleniyor</p>
+
+    <div class="temp-bar-container" style="margin: 20px 0;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span id="min-temp" style="font-size: 11px; font-weight: 800; color: var(--os-text-dim);">--°</span>
+            <span id="max-temp" style="font-size: 11px; font-weight: 800; color: var(--os-text-dim);">--°</span>
+        </div>
+        <div class="temp-range-track">
+            <div id="temp-dot" class="temp-current-dot"></div>
+        </div>
+    </div>
+    <div class="aqi-container">
+        <div id="aqiBadge" class="aqi-pill">HAVA KALİTESİ: <span id="aqi-status-text">İYİ</span></div>
+        <div class="aqi-bar-bg">
+            <div id="aqi-progress" class="indicator-dot"></div>
+        </div>
+    </div>
+</section>
 
         <section class="glass-tile radar-section" onclick="openFullRadar()">
             <p class="tile-label"><i class="fas fa-satellite"></i> CANLI RADAR</p>
@@ -65,17 +79,17 @@
         </section>
 
         <section class="glass-tile uv-section">
-            <p class="tile-label"><i class="fas fa-sun"></i> UV İNDEKSİ</p>
-            <div class="uv-content">
-                <div id="uv-value" class="uv-number">0</div>
-                <p id="uv-description" class="uv-text">DÜŞÜK</p>
-            </div>
-            <div class="uv-bar-wrapper">
-                <div class="aqi-bar-bg uv-bar-custom">
-                    <div id="uv-progress" class="indicator-dot"></div>
-                </div>
-            </div>
-        </section>
+    <p class="tile-label"><i class="fas fa-sun"></i> UV İNDEKSİ</p>
+    <div class="uv-main" style="margin-top: 10px;">
+        <div id="uv-value" style="font-size: 32px; font-weight: 200;">0</div>
+        <p id="uv-description" style="font-size: 14px; font-weight: 700; color: var(--os-text-dim);">DÜŞÜK</p>
+    </div>
+    <div class="uv-bar-wrapper" style="margin-top: 20px;">
+        <div class="aqi-bar-bg uv-bar-custom" style="height: 4px; background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);">
+            <div id="uv-progress" class="indicator-dot"></div>
+        </div>
+    </div>
+</section>
 
         <section class="stats-grid-container">
             <div class="stat-item"><span>YAĞIŞ İHT.</span><p id="rainChance">--%</p></div>
@@ -113,31 +127,66 @@
     </main>
 
     <div id="radar-fullscreen" class="radar-modal">
-        <div class="radar-header">
-            <button class="radar-close" onclick="closeFullRadar()"><i class="fas fa-times"></i></button>
-            <div class="radar-controls-top">
-                <button class="radar-btn" onclick="toggleLayerMenu()"><i class="fas fa-layer-group"></i></button>
-                <button class="radar-btn" onclick="focusOnCurrentLoc()"><i class="fas fa-location-arrow"></i></button>
-            </div>
+    <div class="radar-header">
+        <button class="radar-close" onclick="closeFullRadar()">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div class="radar-controls-top" style="display: flex; gap: 12px;">
+            <button class="radar-btn" onclick="toggleLayerMenu()" title="Katmanlar">
+                <i class="fas fa-layer-group"></i>
+            </button>
+            <button class="radar-btn" onclick="focusOnCurrentLoc()" title="Konumuma Git">
+                <i class="fas fa-location-arrow"></i>
+            </button>
         </div>
-        <div id="radar-layer-menu" class="layer-panel">
-            <div class="layer-header">KATMAN SEÇİN</div>
-            <div class="layer-options">
-                <div class="layer-item active" onclick="changeLayer('precipitation')">Yağış</div>
-                <div class="layer-item" onclick="changeLayer('temp')">Sıcaklık</div>
-                <div class="layer-item" onclick="changeLayer('wind')">Rüzgar</div>
-            </div>
+    </div>
+
+    <div id="radar-layer-menu" class="layer-panel">
+        <div class="layer-header">KATMAN SEÇİN</div>
+        <div class="layer-options">
+            <div class="layer-item active" onclick="changeLayer('precipitation')">Yağış</div>
+            <div class="layer-item" onclick="changeLayer('temp')">Sıcaklık</div>
+            <div class="layer-item" onclick="changeLayer('wind')">Rüzgar</div>
         </div>
-        <div id="full-map"></div>
-        <div class="radar-footer">
-            <div class="radar-player-card">
-                <button id="fullPlayBtn" onclick="radarOynat()"><i class="fas fa-play"></i></button>
-                <div class="player-info">
-                    <span class="player-title" id="radar-time">Canlı Katmanlar</span>
-                </div>
+    </div>
+
+    <div id="full-map"></div>
+
+    <div class="radar-footer">
+        <div class="radar-player-card">
+            <button id="fullPlayBtn" onclick="radarOynat()"><i class="fas fa-play"></i></button>
+            <div class="player-info">
+                <span class="player-title" id="radar-time">Canlı Katmanlar</span>
             </div>
         </div>
     </div>
+</div>
+
+    <div id="city-manager" class="search-modal">
+    <div class="modal-content premium-city-panel">
+        
+        <div class="panel-header">
+            <div class="header-text">
+                <h2 class="panel-title">Şehirlerim</h2>
+                <span class="panel-subtitle">Hava durumu takibi</span>
+            </div>
+            <button onclick="toggleCityManager()" class="close-panel-btn">
+                <i class="fas fa-chevron-down"></i> </button>
+        </div>
+        
+        <div id="saved-cities-list" class="city-cards-grid">
+            </div>
+
+        <div class="panel-footer">
+            <button class="add-city-btn" onclick="toggleSearchModal()">
+                <div class="btn-icon"><i class="fas fa-plus"></i></div>
+                <span>Yeni Şehir Ekle</span>
+            </button>
+        </div>
+        
+    </div>
+</div>
 
     <nav class="bottom-nav">
         <div class="nav-item" onclick="location.reload()">
