@@ -1,305 +1,852 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&display=swap');
 
+:root {
+    --os-bg-1: #091a3c;
+    --os-bg-2: #1c325f;
+    --os-accent: #a855f7;
+    --os-glass: rgba(255, 255, 255, 0.05);
+    --os-glass-strong: rgba(15, 23, 42, 0.9);
+    --os-border: rgba(255, 255, 255, 0.1);
+    --os-radius: 24px;
+    --os-text-main: #ffffff;
+    --os-text-dim: rgba(255, 255, 255, 0.5);
+    --os-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* --- TEMEL AYARLAR --- */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
+    margin: 0; padding: 0; box-sizing: border-box;
+    font-family: var(--os-font);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+    background: radial-gradient(circle at top right, var(--os-bg-2), var(--os-bg-1));
+    background-attachment: fixed !important;
     min-height: 100vh;
+    color: var(--os-text-main);
+    padding: 40px 5% 140px 5%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    transition: background 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- BENTO GRID SİSTEMİ --- */
+.bento-container {
+    display: grid;
+    max-width: 1000px;
+    width: 100%;
+    gap: 16px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas: 
+        "hero hero radar radar"
+        "hero hero chart chart"
+        "wellness stats stats stats"
+        "forecast forecast forecast forecast";
+}
+
+.glass-tile {
+    background: var(--os-glass);
+    backdrop-filter: blur(25px) saturate(160%);
+    -webkit-backdrop-filter: blur(25px) saturate(160%);
+    border: 1px solid var(--os-border);
+    border-radius: var(--os-radius);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.4s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.glass-tile:hover { transform: translateY(-4px); background: rgba(255, 255, 255, 0.08); }
+
+.tile-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--os-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 15px;
+    display: flex; align-items: center; gap: 8px;
+}
+
+/* --- HERO & ANA BİLGİLER --- */
+.hero-section { grid-area: hero; justify-content: space-between; min-height: 380px; }
+.live-clock { font-size: 14px; font-weight: 700; color: var(--os-text-dim); }
+.os-city { font-size: 32px; font-weight: 300; letter-spacing: -1px; }
+.os-temp { 
+    font-size: 94px; 
+    font-weight: 200; 
+    letter-spacing: -6px; 
+    margin: 10px 0; 
+    line-height: 0.8; 
+    white-space: nowrap;
+}
+
+.os-condition { font-size: 16px; font-weight: 600; text-transform: uppercase; color: var(--os-text-dim); }
+
+/* --- AQI & UV PROGRESS BARS --- */
+.aqi-container, .uv-bar-wrapper { margin-top: 15px; }
+.aqi-pill { font-size: 10px; font-weight: 800; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.aqi-bar-bg { 
+    height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; 
+    position: relative; overflow: visible; 
+}
+
+/* JS tarafından kontrol edilen hareketli noktalar */
+.indicator-dot {
+    position: absolute;
+    top: 50%;
+    width: 12px; height: 12px;
+    background: white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    transition: left 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 2;
+}
+
+#aqi-progress { background: var(--os-accent); } /* JS'den gelen left ile çalışır */
+
+.uv-bar-custom {
+    background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
+}
+
+/* --- RADAR SECTION --- */
+.radar-section { grid-area: radar; min-height: 220px; cursor: pointer; }
+#map { 
+    width: 100%; flex: 1; border-radius: 16px; background: #0b152d; 
+    z-index: 1; overflow: hidden;
+}
+.leaflet-tile-pane { filter: grayscale(1) invert(1) opacity(0.6); }
+.radar-overlay-hint {
+    position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+    padding: 6px 15px; border-radius: 20px; font-size: 9px; font-weight: 800; z-index: 2;
+}
+
+/* --- CHART & STATS --- */
+.chart-section { grid-area: chart; }
+.chart-wrapper { flex: 1; position: relative; width: 100%; min-height: 150px; }
+
+.stats-grid-container { 
+    grid-area: stats; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; 
+}
+.stat-item {
+    background: var(--os-glass); border: 1px solid var(--os-border);
+    border-radius: 20px; padding: 15px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+}
+.stat-item span { font-size: 9px; font-weight: 800; color: var(--os-text-dim); text-transform: uppercase; margin-bottom: 5px; }
+.stat-item p { font-size: 18px; font-weight: 600; }
+
+/* --- WELLNESS (ÖNERİLER) --- */
+.wellness-section { grid-area: wellness; justify-content: center; text-align: center; }
+#suggestionText { font-size: 15px; font-weight: 500; line-height: 1.4; color: #fff; }
+
+/* --- FORECAST & ASTRONOMY ROW --- */
+.forecast-astronomy-row {
+    grid-area: forecast; display: flex; gap: 16px; width: 100%;
+}
+
+.forecast-section { flex: 2; }
+
+#weeklyForecast { 
+    display: flex; 
+    justify-content: space-between; 
+    gap: 12px; 
+    width: 100%; 
+    overflow-x: auto; /* Mobilde taşarsa kaydırılabilir */
+    padding-bottom: 5px;
+    scrollbar-width: none; /* Firefox için barı gizle */
+}
+
+#weeklyForecast::-webkit-scrollbar { display: none; }
+
+.forecast-item {
+    flex: 1; 
+    background: rgba(255,255,255,0.05); 
+    border-radius: 20px;
+    padding: 15px 10px; 
+    min-width: 85px; 
+    flex-shrink: 0;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+    gap: 8px; 
+    border: 1px solid transparent; 
+    transition: 0.3s;
+}
+
+.forecast-item:hover { border-color: var(--os-border); background: rgba(255,255,255,0.1); }
+.forecast-item span:first-child { font-size: 10px; font-weight: 800; color: var(--os-text-dim); }
+
+.forecast-item img { 
+    width: 38px; /* 35px bazen mobilde çok küçük kalabiliyor */
+    height: 38px; 
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)) saturate(1.2); /* Renkleri biraz daha patlatır */
+    margin: 4px 0;
+    user-select: none;
+    pointer-events: none;
+    transition: transform 0.3s ease; /* Hover etkileşimi için */
+}
+
+.forecast-item:hover img {
+    transform: scale(1.15) translateY(-2px); /* Üstüne gelince hafifçe büyür ve yükselir */
+}
+
+.forecast-item span:last-child { font-size: 16px; font-weight: 700; }
+
+/* --- ASTRONOMY (SUN ARC) --- */
+.astronomy-card { flex: 1; min-width: 250px; }
+.sun-container { position: relative; width: 100%; height: 100px; margin-top: 10px; }
+.sun-arc { width: 100%; height: 100%; overflow: visible; }
+.sun-times { display: flex; justify-content: space-between; margin-top: -20px; }
+.sunrise, .sunset { display: flex; flex-direction: column; }
+.sunrise span:first-child, .sunset span:first-child { font-size: 9px; font-weight: 800; color: var(--os-text-dim); }
+.sunrise span:last-child, .sunset span:last-child { font-size: 13px; font-weight: 700; }
+
+/* --- MODALS & ALERTS --- */
+.alert-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(15px);
+    display: none; align-items: center; justify-content: center; z-index: 100001;
+}
+.alert-overlay.active { display: flex; }
+.alert-content {
+    background: var(--os-glass-strong); border: 1px solid var(--os-border);
+    border-radius: 28px; padding: 30px; width: 90%; max-width: 340px; text-align: center;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.rain-alert-panel {
+    position: fixed; 
+    top: 20px; 
+    left: 50%; 
+    transform: translateX(-50%);
+    background: rgba(168, 85, 247, 0.2); 
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(168, 85, 247, 0.4); 
+    border-radius: 20px;
+    padding: 12px 20px; 
+    display: none; 
+    align-items: center; 
+    gap: 12px;
+    z-index: 100000; 
+    animation: slideDown 0.5s ease-out;
+}
+
+.rain-alert-panel.exit {
+    animation: slideUp 0.5s ease-in forwards;
+}
+
+.rain-alert-panel.hide {
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* --- RADAR MODAL --- */
+.radar-modal {
+    position: fixed; 
+    inset: 0; 
+    background: #000; 
+    z-index: 1000000;
+    display: none; /* JS ile 'flex' yapılacak */
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.radar-modal[style*="display: flex"] .radar-header,
+.radar-modal[style*="display: block"] .radar-header {
+    display: flex;
+}
+
+#full-map { 
+    width: 100% !important; 
+    height: 100% !important; 
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.radar-header {
+    position: absolute; 
+    top: 0; 
+    width: 100%; 
+    padding: 20px 25px;
+    display: none; /* JS .style.display = 'flex' ile tetikleyecek */
+    justify-content: space-between; 
+    align-items: center;
+    z-index: 1000005; /* Haritanın ve modalın en üstünde */
+    background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);
+    pointer-events: none; /* Header'ın kendisi tıklamayı engellemesin */
+    padding-top: env(safe-area-inset-top, 20px);
+}
+
+.radar-btn, .radar-close {
+    width: 44px; 
+    height: 44px; 
+    border-radius: 50%; 
+    border: 1px solid rgba(255, 255, 255, 0.1); /* İnce bir kenarlık derinliği artırır */
+    background: rgba(30, 30, 30, 0.4); /* Harita üzerinde daha iyi kontrast için biraz daha koyu */
+    backdrop-filter: blur(15px) saturate(150%);
+    -webkit-backdrop-filter: blur(15px) saturate(150%);
+    color: white; 
+    cursor: pointer; 
+    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    overflow-x: hidden;
-    transition: background 0.5s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Haritadan yükselme efekti */
+    pointer-events: auto;
 }
 
-/* Arka plandaki yuvarlak ışık efekti */
-body::before {
+/* Apple Tarzı Etkileşim: Tıklandığında hafifçe küçülme */
+/* Radar Katman Menüsü Başlangıçta Gizli Olmalı */
+#radar-layer-menu {
+    display: none; 
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000002; /* Harita header'ının bir tık üstü */
+}
+
+/* Sadece aktifken göster */
+#radar-layer-menu.active {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: popIn 0.3s ease-out;
+}
+
+.radar-btn:active, .radar-close:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.radar-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* --- BOTTOM NAV --- */
+.bottom-nav {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 400px; height: 75px;
+    background: var(--os-glass-strong); backdrop-filter: blur(30px);
+    border: 1px solid var(--os-border); border-radius: 38px;
+    display: flex; align-items: center; justify-content: space-around;
+    z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.6; transition: 0.3s; }
+.nav-item:hover { opacity: 1; color: var(--os-accent); }
+.search-circle {
+    width: 60px; height: 60px; background: linear-gradient(135deg, var(--os-accent), #6366f1);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    position: absolute; top: -30px; border: 5px solid var(--os-bg-1);
+    box-shadow: 0 10px 20px rgba(168, 85, 247, 0.4); color: white; font-size: 22px;
+}
+.search-label { margin-top: 35px; font-size: 9px; font-weight: 900; }
+
+/* --- MOOD ENGINE (ANIMATED BACKGROUNDS) --- */
+body.weather-clear { background: radial-gradient(circle at top right, #1e40af, #091a3c); }
+body.weather-clouds { background: radial-gradient(circle at top right, #475569, #0f172a); }
+body.weather-rain { background: radial-gradient(circle at top right, #1e293b, #020617); }
+body.weather-thunderstorm { background: radial-gradient(circle at top right, #4c1d95, #020617); }
+
+/* --- ANIMATIONS --- */
+@keyframes slideDown 
+{ 
+    from { top: -100px; opacity: 0; } 
+    to { top: 20px; opacity: 1; } 
+}
+
+@keyframes slideUp {
+    from { top: 20px; opacity: 1; transform: translateX(-50%) scale(1); }
+    to { top: -100px; opacity: 0; transform: translateX(-50%) scale(0.9); }
+}
+
+@keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+
+#weather-bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -1; /* İçeriğin arkasında kalması şart */
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* ☀️ GÜNEŞLİ: Parlama Efekti */
+.weather-clear #weather-bg-canvas::before {
     content: "";
     position: absolute;
-    width: 400px;
-    height: 400px;
-    background: rgba(59, 130, 246, 0.3);
-    filter: blur(100px);
+    top: -10%; right: -10%;
+    width: 650px; height: 650px;
+    background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 75%);
+    animation: sunGlow 12s infinite alternate ease-in-out;
+}
+
+/* 🌧️ YAĞMURLU: Damla Formu Düzenlemesi */
+.rain-drop {
+    position: absolute;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.4));
+    width: 1.5px; /* Daha ince ve gerçekçi */
+    height: 25px;
+    top: -30px;
+    animation: fall linear infinite;
+    will-change: transform;
+    transform: translateZ(0); /* Donanım hızlandırmayı zorlar */
+}
+
+/* ☁️ BULUTLU: Süzülen Sis Katmanı */
+.weather-clouds #weather-bg-canvas::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
+    opacity: 0.1;
+    animation: drift 60s linear infinite;
+}
+
+/* ☀️ Güneş Tasarımı */
+.sun-sphere {
+    position: absolute;
+    top: -100px; 
+    right: -100px;
+    width: 500px; 
+    height: 500px;
+    /* Turuncudan saydama geçiş Apple'ın gün batımı/doğumu hissini verir */
+    background: radial-gradient(circle, rgba(255, 200, 80, 0.3) 0%, rgba(255, 100, 0, 0) 75%);
     border-radius: 50%;
-    top: -10%;
-    right: -10%;
-    z-index: -1;
+    filter: blur(60px);
+    animation: sunPulse 10s infinite alternate ease-in-out;
 }
 
-/* Ana Cam Kart (Apple Glassmorphism) */
-.glass-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(30px) saturate(180%);
-    -webkit-backdrop-filter: blur(30px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 40px;
-    padding: 30px;
-    width: 420px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    text-align: center;
-    position: relative;
-    overflow: visible !important; /* Listenin taşmasına izin ver */
-    animation: fadeInUp 0.8s ease-out;
+/* ❄️ KAR: Yumuşak Süzülme */
+.snow-flake {
+    position: absolute;
+    top: -10px;
+    background: white;
+    border-radius: 50%;
+    filter: blur(1px);
+    animation: snowFall linear infinite;
+    will-change: transform;
+    transform: translateZ(0); /* Donanım hızlandırmayı zorlar */
 }
 
-/* --- ARAMA KUTUSU VE ÖNERİ LİSTESİ --- */
-.search-box {
+/* ☁️ BULUT: Derinlik Yaratan Sis Katmanı */
+.cloud-layer {
+    position: absolute;
+    width: 1200px; 
+    height: 600px;
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.08) 0%, transparent 80%);
+    left: -1200px; /* Ekran dışından başlar */
+    animation: cloudDrift linear infinite;
+    will-change: transform;
+    transform: translateZ(0); /* Donanım hızlandırmayı zorlar */
+}
+
+/* Bulutların birbirini tekrar etmemesi için farklı opacity değerleri */
+.cloud-layer:nth-child(2n) {
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.04) 0%, transparent 80%);
+    animation-delay: -15s;
+}
+
+/* --- Yeni Keyframes --- */
+@keyframes sunPulse {
+    0% { transform: scale(1); opacity: 0.4; }
+    100% { transform: scale(1.2) translate(-30px, 30px); opacity: 0.7; }
+}
+
+/* Karın rüzgarla hafif sağa kayarak düşmesi */
+@keyframes snowFall {
+    0% { transform: translateY(-10vh) translateX(0); opacity: 0; }
+    20% { opacity: 0.8; }
+    100% { transform: translateY(110vh) translateX(50px); opacity: 0; }
+}
+
+@keyframes cloudDrift {
+    from { transform: translateX(0); }
+    to { transform: translateX(calc(100vw + 1200px)); }
+}
+
+@keyframes sunGlow {
+    0% { transform: scale(1) translate(0, 0); opacity: 0.4; }
+    100% { transform: scale(1.2) translate(-20px, 20px); opacity: 0.7; }
+}
+
+@keyframes fall {
+    0% { transform: translateY(-50px); opacity: 0; }
+    15% { opacity: 0.4; }
+    100% { transform: translateY(110vh); opacity: 0.4; }
+}
+
+@keyframes drift {
+    from { background-position: 0 0; }
+    to { background-position: 1000px 0; }
+}
+
+.search-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(40px) saturate(150%);
+    -webkit-backdrop-filter: blur(40px) saturate(150%);
+    display: none; /* JS .active ile tetiklenir */
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 12vh;
+    z-index: 10001;
+}
+
+/* Modal açıldığında çalışan animasyon */
+.search-modal.active {
     display: flex;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 12px 20px;
-    margin-bottom: 25px;
-    position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    z-index: 10001; /* Her şeyin üstünde olmalı */
+    animation: spotlightIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.search-box input {
+.modal-content {
+    width: 90%;
+    max-width: 550px;
+    background: rgba(30, 41, 59, 0.7); /* Daha koyu Apple tonu */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 8px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+}
+
+.search-input-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    gap: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-input-wrapper i {
+    font-size: 20px;
+    color: var(--os-accent);
+}
+
+#sehirInput {
+    width: 100%;
     background: transparent;
     border: none;
     color: white;
+    font-size: 20px;
     outline: none;
-    width: 100%;
-    font-size: 16px;
 }
 
-.search-box button {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
+#sehirInput::placeholder {
+    color: rgba(255, 255, 255, 0.3);
 }
 
+/* Öneriler Listesi */
 .suggestions-list {
-    position: absolute;
-    top: 110%;
-    left: 0;
-    right: 0;
-    background: rgba(30, 41, 59, 0.98); /* Opaklaştırıldı */
-    backdrop-filter: blur(20px);
-    border-radius: 15px;
-    z-index: 10002; /* Input'tan da üstte */
-    max-height: 250px;
+    max-height: 350px;
     overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    padding: 10px 0;
 }
 
 .suggestion-item {
-    padding: 12px 20px;
+    padding: 14px 20px;
+    margin: 4px 10px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     cursor: pointer;
-    text-align: left;
-    font-size: 14px;
-    transition: all 0.2s;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    color: white;
+    transition: all 0.2s ease;
+    font-size: 15px;
+    font-weight: 500;
 }
 
 .suggestion-item:hover {
-    background: rgba(255, 255, 255, 0.15);
-    padding-left: 25px;
+    background: rgba(255, 255, 255, 0.1);
 }
 
-/* --- YAZI VE DERECE STİLLERİ --- */
-.city-name { font-size: 32px; font-weight: 300; letter-spacing: 1px; position: relative; z-index: 1; }
-.temp { 
-    font-size: 90px; 
-    font-weight: 200; 
-    margin: 10px 0;
-    background: linear-gradient(to bottom, #ffffff 30%, #94a3b8 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    display: block;
-    position: relative;
-    z-index: 1; /* Arama listesinin altında kalması için */
-}
-
-/* --- RADAR VE TAM EKRAN TASARIMI --- */
-.radar-container {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 24px;
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#map {
-    width: 100%;
-    transition: height 0.4s ease;
-    z-index: 1; /* Yağış katmanı JS içinde zIndex: 100 ile bunun üstüne çıkacak */
-}
-
-/* Tam Ekran Aktif Sınıfı */
-.radar-container.fs-active {
-    position: fixed !important;
-    top: 0; left: 0;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 9999 !important;
-    background: #000 !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* --- DETAY IZGARASI --- */
-.details-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 25px;
-    margin-top: 15px;
-}
-
-.detail-item {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 15px 10px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Hava Durumu Modları */
-body.clear-day { background: linear-gradient(135deg, #00b4db, #0083b0); }
-body.clear-night { background: linear-gradient(135deg, #2c3e50, #000000); }
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-
-.nevruz-header {
-    width: 100%;
-    background: rgba(16, 185, 129, 0.2); /* Yeşil tonlu cam efekti */
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 12px 0;
-    position: fixed; /* Sayfanın en üstünde sabit kalsın */
-    top: 0;
-    left: 0;
-    z-index: 20000; /* Her şeyin (radar dahil) üstünde olması için */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    animation: slideDown 0.8s ease-out;
-}
-
-.nevruz-content {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.nevruz-content p {
-    color: #fff;
+.suggestion-item i {
+    opacity: 0.5;
     font-size: 14px;
-    font-weight: 500;
+}
+
+/* Kapatma Butonu (İsteğe bağlı, boşluğa tıklayarak da kapanabilir) */
+.close-modal-hint {
+    text-align: center;
+    padding: 12px;
+    font-size: 11px;
+    color: var(--os-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Animasyonlar */
+@keyframes modalFadeIn {
+    from { opacity: 0; backdrop-filter: blur(0px); }
+    to { opacity: 1; backdrop-filter: blur(40px); }
+}
+
+@keyframes spotlightIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(-30px) scale(0.95); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
+}
+
+.loading-shimmer {
+    width: 100%;
+    height: 110px;
+    background: linear-gradient(90deg, var(--os-glass) 25%, rgba(255,255,255,0.1) 50%, var(--os-glass) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 24px;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+
+/* --- PREMIUM CITY PANEL & MODAL --- */
+.premium-city-panel {
+    background: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(40px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+    max-height: 85vh;
+    width: 92%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 32px; /* Daha yumuşak Apple köşeleri */
+    padding: 10px;
+}
+
+.panel-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.city-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+}
+
+.city-cards-grid::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+/* --- ŞEHİR KARTI (MASTER DESIGN) --- */
+.city-card {
+    position: relative;
+    height: 110px;
+    border-radius: 24px;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Apple Tarzı Dokunma Efekti */
+.city-card:active { transform: scale(0.96); }
+.city-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.3); }
+
+.city-card:hover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(255,255,255,0.1), transparent);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Hava Durumu Görsel Kütüphanesi */
+.city-card.clear { background-image: url('https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&q=80&w=500'); }
+.city-card.clouds { background-image: url('https://images.unsplash.com/photo-1483977399921-6cf3810ff529?auto=format&fit=crop&q=80&w=500'); }
+.city-card.rain { background-image: url('https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&q=80&w=500'); }
+.city-card.snow { background-image: url('https://images.unsplash.com/photo-1491002052546-bf38f186af56?auto=format&fit=crop&q=80&w=500'); }
+.city-card.thunderstorm { background-image: url('https://images.unsplash.com/photo-1605727281913-50d4a27f7de4?auto=format&fit=crop&q=80&w=500'); }
+.city-card.mist, .city-card.fog { background-image: url('https://images.unsplash.com/photo-1485236715598-c8879a632007?auto=format&fit=crop&q=80&w=500'); }
+
+/* Okunabilirlik Katmanı */
+.city-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+    z-index: 1;
+}
+
+/* Bilgi Alanları */
+.city-info-left { position: relative; z-index: 2; }
+.city-info-left h3 { 
+    font-size: 22px; 
+    font-weight: 700; 
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.city-info-left p { 
+    font-size: 13px; 
+    font-weight: 600;
+    opacity: 0.9; 
+    text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    margin: 0;
 }
 
-.nevruz-icon {
-    font-size: 18px;
-    animation: flowerBounce 2s infinite ease-in-out;
+.city-info-right { 
+    position: relative; 
+    z-index: 2; 
+    text-align: right; 
+}
+.city-info-right .temp { 
+    font-size: 44px; 
+    font-weight: 200; 
+    letter-spacing: -2px;
+    line-height: 1;
 }
 
-/* Header içeri kayarak gelsin */
-@keyframes slideDown {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
+/* Silme Butonu (Modern Apple Red) */
+.delete-city-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 59, 48, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    color: #ff3b30;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
 }
 
-/* Çiçekler hafifçe sallansın */
-@keyframes flowerBounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2) rotate(10deg); }
+.city-card:hover .delete-city-btn { 
+    opacity: 1; 
+    transform: scale(1); 
 }
 
-/* Header sabit olduğu için ana kartın üzerine binmemesi için body'ye boşluk ver */
-body {
-    padding-top: 80px !important;
+.delete-city-btn:hover {
+    background: #ff3b30;
+    color: white;
 }
 
-/* Mobilde yazı boyutunu ayarla */
-@media (max-width: 480px) {
-    .nevruz-content p {
-        font-size: 11px;
-        text-align: center;
+/* Yeni Şehir Ekle Butonu */
+.add-city-btn {
+    margin: 15px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 18px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.add-city-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--os-accent);
+}
+
+/*TEMP BAR */
+.temp-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-top: 15px;
+    padding: 0 5px;
+}
+
+.range-min, .range-max {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--os-text-dim);
+    min-width: 30px;
+}
+
+.temp-range-track {
+    flex: 1;
+    height: 6px;
+    /* Apple'ın meşhur soğuktan sıcağa geçiş gradyanı */
+    background: linear-gradient(90deg, 
+        #3b82f6 0%,   /* Soğuk Mavi */
+        #60a5fa 25%, 
+        #fbbf24 60%,  /* Ilık Sarı */
+        #f59e0b 80%, 
+        #ef4444 100%  /* Sıcak Kırmızı */
+    );
+    border-radius: 10px;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.temp-current-dot {
+    position: absolute;
+    top: 50%;
+    left: 0%; /* JS ile dinamik değişecek */
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.5);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    transition: left 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 3;
+}
+
+
+/* --- RESPONSIVE --- */
+@media (max-width: 800px) {
+    .bento-container {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-areas: "hero hero" "radar chart" "wellness wellness" "stats stats" "forecast forecast";
     }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* --- RESPONSIVE (MOBİL VE TABLET) UYUMLULUK --- */
-
-/* 1. Bilgisayar ve Geniş Ekranlar */
-@media (min-width: 1024px) {
-    .glass-card {
-        width: 480px; 
-        padding: 40px;
-    }
-}
-
-/* 2. Tabletler (iPad vb.) */
-@media (max-width: 1024px) {
-    .glass-card {
-        width: 90%; 
-        max-width: 450px;
-    }
-}
-
-/* 3. Telefonlar (iPhone, Samsung vb.) */
-@media (max-width: 480px) {
-    body {
-        padding: 15px;
-        align-items: center; /* Mobilde kartı ortala */
-    }
-
-    .glass-card {
+    .stats-grid-container { grid-template-columns: repeat(2, 1fr); }
+    .forecast-astronomy-row { flex-direction: column; }
+    .astronomy-card {
+        min-height: 180px;
         width: 100%;
-        border-radius: 30px; 
-        padding: 20px;
-        margin: 10px;
-    }
-
-    .temp {
-        font-size: 70px; /* Mobilde derece biraz küçülsün */
-    }
-
-    /* Detay kutucuklarını mobilde 2 sütuna düşür */
-    .details-grid {
-        grid-template-columns: repeat(2, 1fr) !important; 
-        gap: 10px;
-    }
-
-    #map {
-        height: 150px; /* Mobilde harita biraz daha basık olsun */
     }
 }
 
-/* 4. Çok Küçük Ekranlar (iPhone SE vb.) */
-@media (max-width: 360px) {
-    .temp { font-size: 55px; }
-    .details-grid { grid-template-columns: 1fr !important; } /* Tek sütuna düş */
+@media (max-width: 500px) {
+    .bento-container { grid-template-columns: 1fr; grid-template-areas: "hero" "radar" "chart" "stats" "wellness" "forecast"; }
+    .os-temp { font-size: 80px; }
+    #weeklyForecast { overflow-x: auto; justify-content: flex-start; padding-bottom: 10px; }
+    .forecast-item { flex: 0 0 90px; }
 }
