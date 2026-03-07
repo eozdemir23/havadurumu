@@ -21,7 +21,7 @@
 }
 
 body {
-    background: radial-gradient(circle at top right, var(--os-bg-2), var(--os-bg-1));
+    background: #020617;
     background-attachment: fixed !important;
     min-height: 100vh;
     color: var(--os-text-main);
@@ -31,6 +31,10 @@ body {
     align-items: center;
     overflow-x: hidden;
     transition: background 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body:not([class*="weather-"]) {
+    background: radial-gradient(circle at top right, var(--os-bg-2), var(--os-bg-1));
 }
 
 /* --- BENTO GRID SİSTEMİ --- */
@@ -167,21 +171,48 @@ body {
 #weeklyForecast::-webkit-scrollbar { display: none; }
 
 .forecast-item {
-    flex: 1; 
-    background: rgba(255,255,255,0.05); 
+    flex: 0 0 95px; /* Apple tarzı sabit genişlik, kaydırma için kritik */
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 20px;
-    padding: 15px 10px; 
-    min-width: 85px; 
+    padding: 12px 10px; 
     flex-shrink: 0;
     display: flex; 
     flex-direction: column; 
     align-items: center;
-    gap: 8px; 
+    gap: 4px; /* Elemanları birbirine biraz daha yaklaştırdık */
     border: 1px solid transparent; 
-    transition: 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.forecast-item:hover { border-color: var(--os-border); background: rgba(255,255,255,0.1); }
+.forecast-item:hover { 
+    border-color: var(--os-border); 
+    background: rgba(255, 255, 255, 0.1); 
+    transform: translateY(-2px);
+}
+
+.forecast-pop {
+    font-size: 10px;
+    font-weight: 800;
+    color: #60a5fa; /* Parlak Apple Mavisi */
+    height: 12px; /* Veri yokken kutunun çökmesini engeller */
+}
+
+.forecast-wind-row {
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.forecast-wind-row span {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--os-text-dim);
+}
+
 .forecast-item span:first-child { font-size: 10px; font-weight: 800; color: var(--os-text-dim); }
 
 .forecast-item img { 
@@ -221,6 +252,9 @@ body {
     animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+
+
+
 .rain-alert-panel {
     position: fixed; 
     top: 20px; 
@@ -256,6 +290,13 @@ body {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.radar-modal.active {
+    display: block;
+    opacity: 1;
 }
 
 .radar-modal[style*="display: flex"] .radar-header,
@@ -266,9 +307,27 @@ body {
 #full-map { 
     width: 100% !important; 
     height: 100% !important; 
-    position: absolute;
     top: 0;
     left: 0;
+    background: #111;
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+
+#full-map iframe {
+    border-radius: var(--os-radius);
+    background-color: #000; /* Yüklenirken arkada beyazlık görünmemesi için */
+}
+
+.radar-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(168, 85, 247, 0.2);
+    border-top: 3px solid var(--os-accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
 .radar-header {
@@ -335,21 +394,77 @@ body {
 
 /* --- BOTTOM NAV --- */
 .bottom-nav {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    width: 90%; max-width: 400px; height: 75px;
-    background: var(--os-glass-strong); backdrop-filter: blur(30px);
-    border: 1px solid var(--os-border); border-radius: 38px;
-    display: flex; align-items: center; justify-content: space-around;
-    z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    position: fixed; 
+    /* Alt boşluğu safe area'ya göre dinamik ayarlar, 30px'i korur */
+    bottom: calc(20px + env(safe-area-inset-bottom)); 
+    left: 50%; 
+    transform: translateX(-50%);
+    width: 90%; 
+    max-width: 400px; 
+    height: 75px;
+    background: var(--os-glass-strong); 
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px); /* Safari desteği için şart */
+    border: 1px solid var(--os-border); 
+    border-radius: 38px;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-around;
+    z-index: 9999; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
-.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.6; transition: 0.3s; }
+
+.nav-item {
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; /* Dikeyde ortala */
+    gap: 4px; /* İkon ve yazı arasındaki mesafe */
+    cursor: pointer; 
+    opacity: 0.6; 
+    transition: 0.3s;
+}
+.nav-item:active {
+    transform: scale(0.9); /* Basıldığında hafifçe küçülür */
+    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
 .nav-item:hover { opacity: 1; color: var(--os-accent); }
 .search-circle {
-    width: 60px; height: 60px; background: linear-gradient(135deg, var(--os-accent), #6366f1);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    position: absolute; top: -30px; border: 5px solid var(--os-bg-1);
-    box-shadow: 0 10px 20px rgba(168, 85, 247, 0.4); color: white; font-size: 22px;
+    width: 60px; 
+    height: 60px; 
+    background: linear-gradient(135deg, var(--os-accent), #6366f1);
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    position: absolute; 
+    top: -30px; 
+    left: 50%; /* Ortalamak için */
+    transform: translateX(-50%); /* Tam merkezleme */
+    border: 5px solid var(--os-bg-1);
+    box-shadow: 0 10px 20px rgba(168, 85, 247, 0.4); 
+    color: white; 
+    font-size: 22px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* Daha yumuşak geçiş */
 }
+
+/* --- ARAMA BUTONU FIX --- */
+.search-circle i {
+    pointer-events: none; /* İkonun tıklamayı "yutmasını" engeller */
+}
+
+.search-wrapper {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.search-circle:active {
+    transform: translateX(-50%) scale(0.85); 
+    box-shadow: 0 5px 15px rgba(168, 85, 247, 0.6);
+}
+
 .search-label { margin-top: 35px; font-size: 9px; font-weight: 900; }
 
 /* --- MOOD ENGINE (ANIMATED BACKGROUNDS) --- */
@@ -615,6 +730,10 @@ body.weather-thunderstorm { background: radial-gradient(circle at top right, #4c
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 
 
 /* --- PREMIUM CITY PANEL & MODAL --- */
@@ -844,9 +963,115 @@ body.weather-thunderstorm { background: radial-gradient(circle at top right, #4c
     }
 }
 
+/* --- MOBİL OPTİMİZASYON (500PX VE ALTI) --- */
 @media (max-width: 500px) {
-    .bento-container { grid-template-columns: 1fr; grid-template-areas: "hero" "radar" "chart" "stats" "wellness" "forecast"; }
-    .os-temp { font-size: 80px; }
-    #weeklyForecast { overflow-x: auto; justify-content: flex-start; padding-bottom: 10px; }
-    .forecast-item { flex: 0 0 90px; }
+    body {
+        padding: 20px 15px 120px 15px; /* Alt bar için boşluk bırakıldı */
+    }
+
+    /* Bento Grid'i dikey sütuna çevir */
+    .bento-container {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "hero"
+            "radar"
+            "chart"
+            "stats"
+            "wellness"
+            "forecast";
+        gap: 12px;
+    }
+
+    /* Ana Sıcaklık ve Şehir Yazısı */
+    .hero-section {
+        min-height: 300px;
+        padding: 20px;
+    }
+
+    .os-city {
+        font-size: 26px;
+    }
+
+    .os-temp {
+        font-size: 72px; /* Ekrandan taşmaması için ideal boyut */
+        letter-spacing: -4px;
+    }
+
+    /* Stats (Hissedilen, Nem vb.) 2'li yan yana dizilim */
+    .stats-grid-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .stat-item {
+        padding: 12px;
+    }
+
+    .stat-item p {
+        font-size: 16px;
+    }
+
+    /* Haftalık Tahmin: Yatay Kaydırma ve Mıknatıs Özelliği */
+    #weeklyForecast {
+        display: flex;
+        justify-content: flex-start;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory; /* Kartların tam oturmasını sağlar */
+        -webkit-overflow-scrolling: touch; /* iOS pürüzsüz kaydırma */
+        padding-bottom: 10px;
+        gap: 8px;
+    }
+
+    .forecast-item {
+        flex: 0 0 85px; /* Kart genişliği */
+        scroll-snap-align: start;
+        padding: 15px 8px;
+    }
+
+    .forecast-item span:last-child {
+        font-size: 14px;
+    }
+
+    /* Radar Tam Ekran Kontrolleri */
+    .radar-controls {
+        top: auto !important;
+        bottom: 110px !important; /* Alt navigasyonun üstünde kalması için */
+        right: 15px !important;
+        gap: 8px;
+        max-width: 160px;
+    }
+
+    .layer-btn {
+        padding: 10px 14px;
+        font-size: 10px;
+        background: rgba(15, 23, 42, 0.9) !important;
+    }
+
+    /* Alt Navigasyon Barı */
+    .bottom-nav {
+        width: 94%;
+        height: 65px;
+        border-radius: 30px;
+    }
+
+    .search-circle {
+        width: 54px;
+        height: 54px;
+        top: -27px;
+    }
+
+    .search-label {
+        margin-top: 30px;
+    }
+
+    /* Modal (Şehir Arama ve Radar) İçerik Düzenleme */
+    .modal-content, .premium-city-panel {
+        width: 95%;
+        padding: 15px;
+        border-radius: 28px;
+    }
+
+    #sehirInput {
+        font-size: 18px;
+    }
 }
