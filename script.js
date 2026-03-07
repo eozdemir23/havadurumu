@@ -1,6 +1,87 @@
-/* WeatherOS v3.3 - Kararlı Final Sürümü */
+// --- SİSTEM İZLEME, RAPORLAMA VE KOMUT ÇEKİRDEĞİ ---
 
-// 1. GLOBAL DEĞİŞKENLER & KONFİGÜRASYON
+let lastLoggedMessage = ""; 
+
+function reportToAdmin(message, type = 'info', country = null) {
+    const finalMessage = country ? `${message} [${country.toUpperCase()}]` : message;
+    if (finalMessage === lastLoggedMessage) return;
+    lastLoggedMessage = finalMessage;
+
+    try {
+        let logs = JSON.parse(localStorage.getItem('os_logs')) || [];
+        const newLog = {
+            time: new Date().toLocaleTimeString('tr-TR'),
+            message: finalMessage,
+            type: type
+        };
+
+        logs.push(newLog);
+        if (logs.length > 50) logs.shift();
+        localStorage.setItem('os_logs', JSON.stringify(logs));
+        window.dispatchEvent(new Event('storage')); 
+
+        const logColors = { info: '#10b981', api: '#3b82f6', error: '#ef4444' };
+        console.log(`%c[AdminLog] ${finalMessage}`, `color: ${logColors[type] || '#ccc'}`);
+        
+    } catch (e) { 
+        console.error("Log yazma hatası:", e); 
+    }
+}
+
+// --- BAKIM MODU & ERİŞİM KONTROLÜ ---
+function checkMaintenanceAccess() {
+    const isMaint = localStorage.getItem('maintenance_mode') === 'true';
+    if (isMaint) {
+        // index.html açıldığında veya yenilendiğinde admin'e rapor gönder
+        const lastCity = localStorage.getItem('last_searched_city') || 'Bilinmeyen Konum';
+        reportToAdmin(`Erişim Engellendi: Kullanıcı sisteme girmeye çalıştı. Konum: ${lastCity}`, 'error');
+    }
+}
+
+// --- TERMİNAL KOMUT İŞLEMCİSİ (B Şıkkı Entegrasyonu) ---
+function processCommand(cmd) {
+    const command = cmd.toLowerCase().trim();
+    
+    if (command === '/clear') {
+        localStorage.setItem('os_logs', JSON.stringify([]));
+        window.dispatchEvent(new Event('storage'));
+        reportToAdmin("Terminal temizlendi.", "info");
+    } 
+    else if (command === '/maintenance on') {
+        localStorage.setItem('maintenance_mode', 'true');
+        window.dispatchEvent(new Event('storage'));
+        reportToAdmin("KOMUT: Bakım Modu Aktif Edildi.", "error");
+    }
+    else if (command === '/maintenance off') {
+        localStorage.setItem('maintenance_mode', 'false');
+        window.dispatchEvent(new Event('storage'));
+        reportToAdmin("KOMUT: Bakım Modu Devre Dışı.", "info");
+    }
+    else {
+        reportToAdmin(`Geçersiz Komut: ${command}`, 'error');
+    }
+}
+
+// --- HATA SENSÖRLERİ ---
+window.addEventListener('error', (event) => {
+    const fileName = event.filename ? event.filename.split('/').pop() : 'Bilinmeyen';
+    reportToAdmin(`KRİTİK HATA: ${event.message} | Dosya: ${fileName}`, 'error');
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason?.message || event.reason;
+    reportToAdmin(`API/AĞ ÇÖKMESİ: ${reason}`, 'error');
+});
+
+// --- SİSTEM BAŞLATMA ---
+document.addEventListener('DOMContentLoaded', () => {
+    reportToAdmin("WeatherOS Core v2.0 Başlatıldı. Tüm sensörler online.", "info");
+    checkMaintenanceAccess(); // Bakım modu kontrolünü yap
+    
+    const screenRes = `${window.screen.width}x${window.screen.height}`;
+    reportToAdmin(`Diagnostik: ${screenRes} çözünürlük algılandı.`, 'info');
+});
+
 const firebaseConfig = {
     apiKey: "AIzaSyCIaCoQtzaMyYMJol0FVSGv6A4eCBIhXx8 ",
     authDomain: "weatheros-auth.firebaseapp.com",
@@ -110,8 +191,142 @@ function arkaPlanGuncelle(durumAna) {
     }
 }
 
+// script.js - Bakım ekranı dinleyicisi
+/**
+ * WeatherOS Bakım Modu & Canlı Veri Senkronizasyonu
+ * Özdemir Core v2.8 - Full Screen Responsive
+ */
+
+window.addEventListener('storage', (e) => {
+    // Sadece bizi ilgilendiren anahtarları dinle
+    const trackedKeys = ['maintenance_mode', 'core_progress', 'core_eta'];
+    
+    if (trackedKeys.includes(e.key)) {
+        const isLocked = localStorage.getItem('maintenance_mode') === 'true';
+        const progress = localStorage.getItem('core_progress') || 0;
+        const eta = localStorage.getItem('core_eta') || "HESAPLANIYOR...";
+
+        if (isLocked) {
+            renderMaintenanceOverlay(progress, eta);
+        } else if (e.key === 'maintenance_mode' && e.newValue === 'false') {
+            // Bakım modu kapatıldığında sayfayı yenileyerek uygulamayı geri getir
+            location.reload();
+        }
+    }
+});
+
+function renderMaintenanceOverlay(progress, eta) {
+    // Eğer overlay zaten varsa sadece değerleri güncelle, yoksa baştan oluştur
+    let overlay = document.getElementById('weatheros-maintenance-overlay');
+    
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'weatheros-maintenance-overlay';
+        document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+        <div class="m-wrapper">
+            <div class="m-grid"></div>
+            
+            <div class="m-content">
+                <header class="m-header">
+                    <div class="m-brand">WEATHER OS // CORE ENGINE</div>
+                    <div class="m-badge">SİSTEM DURUMU: <span class="m-blink">GÜNCELLENİYOR</span></div>
+                </header>
+
+                <div class="m-hex-container">
+                    <div class="m-hex">
+                        <div class="m-hex-text">${progress}%</div>
+                    </div>
+                </div>
+
+                <h1 class="m-title">SİSTEM YAPILANDIRILIYOR</h1>
+                <p class="m-desc">ERİŞİM ÖZDEMİR TARAFINDAN GEÇİCİ OLARAK KISITLANDI</p>
+
+                <div class="m-progress-box">
+                    <div class="m-bar-container">
+                        <div class="m-bar-fill" style="width: ${progress}%">
+                            <div class="m-bar-light"></div>
+                        </div>
+                    </div>
+                    <div class="m-eta-row">
+                        <span class="m-eta-label">TAHMİNİ TAMAMLANMA SÜRESİ:</span>
+                        <span class="m-eta-val">${eta}</span>
+                    </div>
+                </div>
+
+                <footer class="m-footer">
+                    <div class="m-foot-item">OPERATÖR: <span class="m-white">ÖZDEMİR</span></div>
+                    <div class="m-foot-item">SUNUCU: <span class="m-white">ADIYAMAN/TR</span></div>
+                    <div class="m-foot-item">YKS-2026: <span class="m-white">HAZIRLIK</span></div>
+                </footer>
+            </div>
+        </div>
+
+        <style>
+            #weatheros-maintenance-overlay {
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background: #0a0a0c; color: #fff; z-index: 999999;
+                font-family: 'Inter', 'JetBrains Mono', sans-serif; overflow: hidden;
+            }
+            .m-wrapper {
+                height: 100%; display: flex; align-items: center; justify-content: center;
+                position: relative;
+            }
+            .m-grid {
+                position: absolute; width: 100%; height: 100%;
+                background-image: linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
+                                  linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
+                background-size: 40px 40px; z-index: 1;
+            }
+            .m-content { position: relative; z-index: 10; width: 90%; max-width: 600px; text-align: center; }
+            .m-header { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 2px; opacity: 0.5; margin-bottom: 40px; }
+            .m-hex-container { margin-bottom: 30px; }
+            .m-hex {
+                width: 100px; height: 100px; background: rgba(16, 185, 129, 0.05);
+                border: 2px solid #10b981; margin: 0 auto; transform: rotate(45deg);
+                display: flex; align-items: center; justify-content: center;
+                box-shadow: 0 0 30px rgba(16, 185, 129, 0.15);
+            }
+            .m-hex-text { transform: rotate(-45deg); font-size: 28px; font-weight: 800; color: #10b981; }
+            .m-title { font-size: clamp(20px, 6vw, 36px); font-weight: 900; margin-bottom: 10px; letter-spacing: -1px; }
+            .m-desc { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 40px; }
+            .m-progress-box { background: rgba(255,255,255,0.02); padding: 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
+            .m-bar-container { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin-bottom: 15px; }
+            .m-bar-fill { height: 100%; background: #10b981; border-radius: 10px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+            .m-bar-light { position: absolute; right: 0; top: 0; height: 100%; width: 20px; box-shadow: 0 0 15px #10b981; }
+            .m-eta-row { display: flex; justify-content: space-between; font-size: 11px; }
+            .m-eta-label { opacity: 0.5; }
+            .m-eta-val { color: #10b981; font-weight: bold; }
+            .m-footer { display: flex; justify-content: space-around; margin-top: 50px; font-size: 10px; opacity: 0.4; }
+            .m-white { color: #fff; margin-left: 4px; }
+            .m-blink { animation: m-blink-anim 1s infinite; }
+            @keyframes m-blink-anim { 50% { opacity: 0; } }
+
+            @media (max-width: 480px) {
+                .m-header { flex-direction: column; gap: 8px; }
+                .m-footer { flex-direction: column; gap: 10px; }
+            }
+        </style>
+    `;
+}
+
+// Sayfa ilk yüklendiğinde bakım modu kontrolü
+document.addEventListener('DOMContentLoaded', () => {
+    const isLocked = localStorage.getItem('maintenance_mode') === 'true';
+    if (isLocked) {
+        const progress = localStorage.getItem('core_progress') || 0;
+        const eta = localStorage.getItem('core_eta') || "HESAPLANIYOR...";
+        renderMaintenanceOverlay(progress, eta);
+    }
+});
+
 // --- ANA VERİ MOTORU ---
 async function verileriGetir(sehir = null, lat = null, lon = null) {
+    // --- ÖLÇÜM BAŞLAT (Admin Panel için) ---
+    const startTime = performance.now(); 
+
     // --- 0. BAŞLANGIÇ: Yükleme Hissi (UX) ---
     document.body.style.opacity = "0.7";
     document.body.style.filter = "blur(3px)";
@@ -125,14 +340,29 @@ async function verileriGetir(sehir = null, lat = null, lon = null) {
 
     try {
         const res = await fetch(url);
-        if (!res.ok) throw new Error(res.status);
+        
+        // --- ÖLÇÜM BİTİR & RAPORLA ---
+        const endTime = performance.now();
+        const duration = Math.round(endTime - startTime);
+
+        if (!res.ok) {
+            // Olağanüstü Durum: API Hatası (404, 500 vb.)
+            reportToAdmin(`API Hatası: ${res.status} (${searchContext})`, 'error');
+            throw new Error(res.status);
+        }
+
         const data = await res.json();
+        
+        // --- BAŞARI LOGU: Hız Ölçümü ile birlikte ---
+        reportToAdmin(`${searchContext} verileri alındı. Gecikme: ${duration}ms`, 'api');
 
         const cur = data.current;
         
         // --- 1. PREMIUM KAYIT SİSTEMİ ---
         if (cur.name) {
             saveCity(cur.name); 
+            // Opsiyonel: Admin paneline kayıt bilgisi düşsün
+            reportToAdmin(`Kullanıcı lokasyonu güncelledi: ${cur.name}`, 'info');
         }
 
         // --- 2. ATMOSFERİK MOTOR ---
@@ -143,8 +373,6 @@ async function verileriGetir(sehir = null, lat = null, lon = null) {
         updateElementWithAnim('derece', Math.round(cur.main.temp), "°");
         updateElementWithAnim('durum', cur.weather[0].description.toUpperCase());
         
-        // Isı Şeridi Hesaplaması (Apple Style)
-        // Forecast verisindeki ilk günün (bugün) min/max değerlerini kullanmak en doğrusudur
         const dailyMin = (data.forecast && data.forecast[0]) ? data.forecast[0].main.temp_min : cur.main.temp_min;
         const dailyMax = (data.forecast && data.forecast[0]) ? data.forecast[0].main.temp_max : cur.main.temp_max;
         
@@ -184,8 +412,10 @@ async function verileriGetir(sehir = null, lat = null, lon = null) {
         document.body.style.filter = "none";
 
     } catch (e) {
+        // --- KRİTİK HATA YÖNETİMİ ---
         console.error("WeatherOS Motor Hatası:", e);
-        // Hata durumunda ekranı canlandır ki kullanıcı etkileşime devam edebilsin
+        reportToAdmin(`SİSTEM ÇÖKMESİ: ${e.message}`, 'error');
+
         document.body.style.opacity = "1";
         document.body.style.filter = "none";
         
@@ -217,6 +447,10 @@ function updateTempBar(current, min, max) {
     dot.style.left = `${percent}%`;
 
     // Mekatronik dokunuş: Sıcaklığa göre nokta rengini belirle
+    if (current >= 40) {
+    dot.style.background = "#ff0000"; // Kritik Sıcaklık
+    dot.style.boxShadow = "0 0 15px #ff0000";
+   }
     if (current >= 30) {
         dot.style.background = "orange";
         dot.style.boxShadow = "0 0 10px orange";
@@ -894,6 +1128,7 @@ function toggleCityManager() {
     modal.classList.toggle('active');
     if(modal.classList.contains('active')) renderCityCards();
 }
+
 
 
 // 4. BAŞLATICI
