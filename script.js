@@ -45,11 +45,17 @@ function closeAlert() { document.getElementById('os-alert').classList.remove('ac
 
 function toggleSearchModal() {
     const modal = document.getElementById('searchModal');
+    if (!modal) return;
+    
     const isHidden = modal.style.display === 'none' || modal.style.display === '';
     modal.style.display = isHidden ? 'flex' : 'none';
+    
     if (isHidden) { 
-        document.getElementById('sehirInput').value = ''; 
-        document.getElementById('sehirInput').focus(); 
+        const input = document.getElementById('sehirInput');
+        if(input) {
+            input.value = ''; 
+            input.focus(); 
+        }
     }
 }
 
@@ -171,6 +177,7 @@ async function verileriGetir(sehir = null, lat = null, lon = null) {
         }
 
         initRadar(cur.coord.lat, cur.coord.lon);
+        syncRadarToCoords(cur.coord.lat, cur.coord.lon);
 
         // --- BAŞARI: Efektleri Kaldır ---
         document.body.style.opacity = "1";
@@ -208,6 +215,18 @@ function updateTempBar(current, min, max) {
     percent = Math.max(2, Math.min(percent, 98));
 
     dot.style.left = `${percent}%`;
+
+    // Mekatronik dokunuş: Sıcaklığa göre nokta rengini belirle
+    if (current >= 30) {
+        dot.style.background = "orange";
+        dot.style.boxShadow = "0 0 10px orange";
+    } else if (current <= 5) {
+        dot.style.background = "#00d4ff";
+        dot.style.boxShadow = "0 0 10px #00d4ff";
+    } else {
+        dot.style.background = "white";
+        dot.style.boxShadow = "none";
+    }
 }
 
 // --- RADAR SİSTEMİ (KÜÇÜK VE TAM EKRAN) ---
@@ -266,40 +285,83 @@ async function initRadar(lat, lon) {
     }
 }
 
-function openFullRadar() {
+async function openFullRadar() {
     const modal = document.getElementById('radar-fullscreen'); 
-    if (!modal) return;
+    const fullMapContainer = document.getElementById('full-map');
+    
+    if (!modal || !fullMapContainer) return;
 
+    // MODAL GÖRÜNÜRLÜK ZIRHLAMA
     modal.style.display = 'flex';
+    modal.style.zIndex = '99999'; // En üstte olduğundan emin ol
+    modal.style.opacity = '1';
+    modal.style.pointerEvents = 'auto'; // Tıklamaları yakala
     document.body.style.overflow = 'hidden';
 
-    // CSS'te gizlediğimiz butonları modal açıldığında göster
-    const header = modal.querySelector('.radar-header');
-    if (header) header.style.display = 'flex';
+    // 1. KOORDİNAT HAZIRLIĞI
+    let lat = 41.0082, lon = 28.9784; 
+    try {
+        if (typeof map !== 'undefined' && map) {
+            const center = map.getCenter();
+            const cLat = parseFloat(center.lat || center[0]);
+            const cLon = parseFloat(center.lng || center[1]);
+            if (!isNaN(cLat) && !isNaN(cLon)) {
+                lat = cLat;
+                lon = cLon;
+            }
+        }
+    } catch (e) { console.warn("Harita merkezi alınamadı."); }
 
-    if (!fullMap) {
-        fullMap = L.map('full-map', { 
-            zoomControl: false, 
-            attributionControl: false 
-        }).setView([41, 29], 8);
-        
-        // Apple Style Light Map
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(fullMap);
+    // 2. IFRAME YÖNETİMİ
+    let iframe = document.getElementById('windy-frame');
+    const windyUrl = `https://embed.windy.com/embed2.html?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&zoom=8&overlay=radar&product=radar&marker=true&metricWind=km/h&metricTemp=%C2%B0C&radarRange=-1`;
+
+    if (!iframe) {
+        fullMapContainer.innerHTML = `
+            <div class="radar-loading-overlay" style="position: absolute; inset:0; background: #000; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; border-radius:15px;">
+                <div class="radar-spinner"></div>
+                <p style="color:#a855f7; margin-top:15px; font-family:monospace; font-size:11px;">SİSTEMLER BAĞLANIYOR...</p>
+            </div>`;
+
+        iframe = document.createElement('iframe');
+        iframe.id = "windy-frame";
+        iframe.src = windyUrl;
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.border = "none";
+        iframe.style.borderRadius = "15px";
+        iframe.style.display = "none"; 
+
+        iframe.onload = () => {
+            const loader = fullMapContainer.querySelector('.radar-loading-overlay');
+            if (loader) loader.remove();
+            iframe.style.display = "block";
+        };
+
+        fullMapContainer.appendChild(iframe);
+    } else {
+        // Eğer zaten varsa sadece konumu güncelle (URL değişince onload tekrar tetiklenir)
+        if (iframe.src !== windyUrl) {
+            iframe.style.display = "none"; // Yüklenene kadar gizle
+            iframe.src = windyUrl;
+        }
     }
-    
-    if (map) fullMap.setView(map.getCenter(), map.getZoom());
-    
-    // Modal animasyonu bitince haritayı boyutlandır (Kritik!)
-    setTimeout(() => { 
-        fullMap.invalidateSize(); 
-        syncFullRadarLayers(); 
-    }, 400); 
 }
 
+// --- 2. RADAR KAPATMA & BELLEK TEMİZLİĞİ ---
 function closeFullRadar() {
-    document.getElementById('radar-fullscreen').style.display = 'none';
-    document.body.style.overflow = 'auto';
+    const modal = document.getElementById('radar-fullscreen');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.pointerEvents = 'none'; // Tıklama engelini kaldır
+    }
+    document.body.style.overflow = 'auto'; // Scroll'u kesinlikle geri aç
+    
+    // Windy frame'i bellekte bırak ama durdur (CPU koruması)
+    const iframe = document.getElementById('windy-frame');
+    if (iframe) iframe.src = 'about:blank'; 
 }
+
 
 function toggleLayerMenu() {
     document.getElementById('radar-layer-menu').classList.toggle('active');
@@ -335,28 +397,96 @@ async function syncFullRadarLayers() {
     } catch (e) { console.error("Radar URL Hatası"); }
 }
 
+function changeWindyLayer(layerName) {
+    const iframe = document.getElementById('windy-frame');
+    const loader = document.querySelector('.radar-loading-overlay');
+    
+    if (!iframe) {
+        // Eğer radar hiç açılmamışsa önce radarı aç
+        openFullRadar().then(() => changeWindyLayer(layerName));
+        return;
+    }
+
+    try {
+        const url = new URL(iframe.src);
+        
+        // Eğer zaten aynı katmandaysak işlem yapma (Sistem yorulmasın)
+        if (url.searchParams.get('overlay') === layerName) return;
+
+        // Katmanı güncelle
+        url.searchParams.set('overlay', layerName);
+        
+        // Kullanıcıya görsel geri bildirim ver (Loading ekranını tekrar göster)
+        if (loader) loader.style.display = "flex";
+        iframe.style.display = "none";
+
+        // Yeni URL'i yükle
+        iframe.src = url.toString();
+
+        // Iframe yüklendiğinde loading ekranını kaldır (Zaten onload event'in vardı)
+        iframe.onload = () => {
+            if (loader) loader.style.display = "none";
+            iframe.style.display = "block";
+        };
+
+    } catch (e) {
+        console.error("Katman değişim hatası:", e);
+    }
+}
+
+
+function syncRadarToCoords(lat, lon) {
+    const iframe = document.getElementById('windy-frame');
+    if (!iframe) return;
+
+    // Koordinatları zorla sayıya çevir ve kontrol et
+    let safeLat = parseFloat(lat);
+    let safeLon = parseFloat(lon);
+
+    if (isNaN(safeLat) || isNaN(safeLon)) {
+        safeLat = 41.0082; // Hata durumunda İstanbul
+        safeLon = 28.9784;
+    }
+
+    try {
+        const currentUrl = new URL(iframe.src);
+        currentUrl.searchParams.set('lat', safeLat.toFixed(4));
+        currentUrl.searchParams.set('lon', safeLon.toFixed(4));
+        
+        if (iframe.src !== currentUrl.toString()) {
+            iframe.src = currentUrl.toString();
+        }
+    } catch (e) {
+        console.error("Radar senkronizasyon hatası:", e);
+    }
+}
+
 function radarOynat() {
+    // Eğer tam ekran Windy açıksa, bu fonksiyonu devre dışı bırak (Windy'nin kendi oynatıcısı var)
+    if (document.getElementById('radar-fullscreen').style.display === 'flex') {
+        console.log("Windy Iframe aktif, yerel animasyon durduruldu.");
+        return;
+    }
+
     if (radarLayers.length === 0) return;
     let i = 0;
     const playBtn = document.getElementById('playBtn');
-    const fullPlayBtn = document.getElementById('fullPlayBtn');
 
     if (animationTimer) {
         clearInterval(animationTimer);
         animationTimer = null;
         if(playBtn) playBtn.innerText = "▶ OYNAT";
-        if(fullPlayBtn) fullPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+        // Tüm katmanları gizle, sadece sonuncuyu (en güncel) göster
+        radarLayers.forEach(l => l.setOpacity(0));
+        radarLayers[radarLayers.length - 1].setOpacity(0.8);
         return;
     }
 
     if(playBtn) playBtn.innerText = "⏸ DURDUR";
-    if(fullPlayBtn) fullPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
 
     animationTimer = setInterval(() => {
         radarLayers.forEach(l => l.setOpacity(0));
-        fullRadarLayers.forEach(l => l.setOpacity(0));
         if (radarLayers[i]) radarLayers[i].setOpacity(0.8);
-        if (fullRadarLayers[i]) fullRadarLayers[i].setOpacity(0.8);
         i = (i + 1) % radarLayers.length;
     }, 600);
 }
@@ -425,7 +555,7 @@ function createDynamicWeatherEffects(condition) {
     const bgContainer = document.getElementById('weather-bg-canvas');
     if (!bgContainer) return;
     
-    bgContainer.innerHTML = ''; // Sahneyi temizle
+    bgContainer.innerHTML = ''; 
     const cond = condition.toLowerCase();
 
     // ☀️ GÜNEŞLİ (Clear)
@@ -479,18 +609,20 @@ function createDynamicWeatherEffects(condition) {
     }
 
     // ⚡ ŞİMŞEK (Thunderstorm)
-    else if (cond.includes('thunderstorm')) {
-        // Önce yağmuru başlat
+if (cond.includes('thunderstorm')) {
         createDynamicWeatherEffects('rain');
         
-        // Rastgele şimşek çakmaları
+        // Önceki flash döngülerini temizlemek için bir ID atayalım
+        if (window.thunderTimeout) clearTimeout(window.thunderTimeout);
+
         const flash = () => {
-            if (Math.random() > 0.94 && document.body.classList.contains('weather-thunderstorm')) {
-                bgContainer.style.backgroundColor = 'rgba(255,255,255,0.15)';
-                setTimeout(() => bgContainer.style.backgroundColor = 'transparent', 80);
-            }
+            // Sadece hava hala fırtınalıysa ve body sınıfı değişmemişse çalış
             if (document.body.classList.contains('weather-thunderstorm')) {
-                setTimeout(flash, 400);
+                if (Math.random() > 0.94) {
+                    bgContainer.style.backgroundColor = 'rgba(255,255,255,0.15)';
+                    setTimeout(() => bgContainer.style.backgroundColor = 'transparent', 80);
+                }
+                window.thunderTimeout = setTimeout(flash, 400);
             }
         };
         flash();
@@ -545,13 +677,46 @@ function grafikCiz(forecastData) {
 
 function renderHaftalik(list) {
     const container = document.getElementById('weeklyForecast');
-    if (!container) return;
-    container.innerHTML = list.filter(i => i.dt_txt.includes("12:00:00")).slice(0, 5).map(gun => `
-        <div class="forecast-item">
-            <span>${new Date(gun.dt*1000).toLocaleDateString('tr-TR',{weekday:'short'}).toUpperCase()}</span>
-            <img src="https://openweathermap.org/img/wn/${gun.weather[0].icon}.png">
-            <span>${Math.round(gun.main.temp)}°</span>
-        </div>`).join('');
+    if (!container || !list) return;
+
+    const now = new Date().getHours();
+
+    container.innerHTML = list.slice(0, 10).map((gun, index) => {
+        const date = new Date(gun.dt * 1000);
+        const hourValue = date.getHours();
+        
+        // İlk elemanı "Şimdi" olarak işaretle (Apple Tarzı)
+        const hourDisplay = index === 0 ? "Şimdi" : `${hourValue}:00`;
+        
+        const temp = Math.round(gun.main.temp);
+        const pop = Math.round(gun.pop * 100); 
+        const wind = Math.round(gun.wind.speed);
+        const icon = gun.weather[0].icon;
+
+        // Yağış rengini vurgula (%20 altını gösterme ki kalabalık yapmasın)
+        const popColor = pop > 50 ? '#00d4ff' : '#a0a0a0';
+
+        return `
+            <div class="forecast-item" style="scroll-snap-align: start; flex: 0 0 85px;">
+                <span class="forecast-time" style="font-weight: ${index === 0 ? '700' : '400'}">${hourDisplay}</span>
+                
+                <span class="forecast-pop" style="color: ${popColor}; font-size: 10px; height: 12px;">
+                    ${pop > 10 ? '%' + pop : ''}
+                </span>
+                
+                <img src="https://openweathermap.org/img/wn/${icon}@2x.png" 
+                     alt="weather" 
+                     style="width: 45px; height: 45px; margin: 5px 0;">
+                
+                <span class="forecast-temp-val" style="font-size: 19px; font-weight: 700; letter-spacing: -1px;">${temp}°</span>
+                
+                <div class="forecast-wind-row" style="display: flex; align-items: center; gap: 3px; margin-top: 5px; opacity: 0.6;">
+                    <i class="fas fa-wind" style="font-size: 8px;"></i>
+                    <span style="font-size: 9px; font-weight: 500;">${wind}<small>km/s</small></span>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function oneriUret(temp, desc, pop) {
@@ -562,13 +727,55 @@ function oneriUret(temp, desc, pop) {
 }
 
 function focusOnCurrentLoc() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-            fullMap.flyTo([pos.coords.latitude, pos.coords.longitude], 10);
-        });
+    if (!navigator.geolocation) {
+        showAlert("DESTEKLENMİYOR", "Tarayıcınız konum servislerini desteklemiyor.");
+        return;
     }
-}
 
+    // Kullanıcıya işlemin başladığını hissettirmek için bir feedback verilebilir
+    console.log("Konum verisi okunuyor...");
+
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const lat = parseFloat(pos.coords.latitude);
+            const lon = parseFloat(pos.coords.longitude);
+
+            if (!isNaN(lat) && !isNaN(lon)) {
+                // 1. KÜÇÜK HARİTAYI GÜNCELLE (Leaflet)
+                if (map) {
+                    map.flyTo([lat, lon], 10, {
+                        animate: true,
+                        duration: 1.5
+                    });
+                }
+
+                // 2. TAM EKRAN RADARI GÜNCELLE (Merkezi Fonksiyon Kullanımı)
+                // Daha önce tanımladığın bu fonksiyonu çağırmak DRY (Don't Repeat Yourself) prensibine uygundur
+                syncRadarToCoords(lat, lon);
+
+                // 3. HAVA DURUMU VERİLERİNİ GÜNCELLE
+                verileriGetir(null, lat, lon);
+            }
+        },
+        err => {
+            // Hata koduna göre daha spesifik mesajlar
+            let errorMsg = "Konum alınamadı.";
+            if (err.code === 1) errorMsg = "Konum izni reddedildi.";
+            else if (err.code === 3) errorMsg = "Konum isteği zaman aşımına uğradı.";
+            
+            console.warn(`Hata: ${errorMsg}`);
+            showAlert("KONUM HATASI", errorMsg);
+            
+            // Hata durumunda varsayılan merkeze dön
+            verileriGetir('Istanbul');
+        },
+        { 
+            enableHighAccuracy: true, 
+            timeout: 8000, // Biraz daha toleranslı bir süre
+            maximumAge: 0 
+        }
+    );
+}
 
 // 1. YAĞIŞ BİLDİRİM SİSTEMİ (Apple Style Alert)
 function checkRainAlert(popValue) {
@@ -692,6 +899,7 @@ function toggleCityManager() {
 // 4. BAŞLATICI
 window.addEventListener('load', () => {
     saatiGuncelle();
+    initNavigation(); // Navigasyonu bağla
     setInterval(saatiGuncelle, 60000);
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -700,3 +908,22 @@ window.addEventListener('load', () => {
         );
     } else { verileriGetir('Istanbul'); }
 });
+
+function initNavigation() {
+    const searchBtn = document.querySelector('.search-circle');
+    const searchWrapper = document.querySelector('.search-wrapper');
+
+    // Hem daireye hem de dışındaki kapsayıcıya tıklanabilir yapalım
+    if (searchBtn) {
+        searchBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Diğer eventleri tetiklemesin
+            toggleSearchModal();
+        });
+    }
+
+    if (searchWrapper) {
+        searchWrapper.addEventListener('click', () => {
+            toggleSearchModal();
+        });
+    }
+}
