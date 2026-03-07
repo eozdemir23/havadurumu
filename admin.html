@@ -3,111 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Weather OS</title>
-    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Admin Paneline Özel Ek Stiller */
-        .admin-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
-        }
-        .admin-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 25px;
-            padding: 25px;
-            backdrop-filter: blur(10px);
-        }
-        .status-pill {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            background: var(--main-theme);
-            float: right;
-        }
-        .control-group { margin-bottom: 20px; }
-        .control-group label { display: block; margin-bottom: 8px; font-size: 14px; opacity: 0.7; }
-        select, input[type="range"] { width: 100%; cursor: pointer; }
-    </style>
+    <title>System Architecture | WeatherOS Core</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="admin.css"> 
 </head>
-<body class="admin-page">
-    <div class="video-container">
-        <div class="video-overlay" style="background: linear-gradient(135deg, #0f172a 0%, #020617 100%);"></div>
+<body>
+
+<aside>
+    <div class="logo"><i class="fas fa-microchip"></i> WEATHER OS // CORE</div>
+    <button class="nav-btn active" onclick="showSection('metrics')"><i class="fas fa-chart-line"></i> Sistem Birimleri</button>
+    <button class="nav-btn" onclick="showSection('data')"><i class="fas fa-database"></i> Veri Kaynakları</button>
+    <button class="nav-btn" onclick="showSection('firewall')"><i class="fas fa-shield-alt"></i> Güvenlik Duvarı</button>
+    <button class="nav-btn" onclick="showSection('api')"><i class="fas fa-code-branch"></i> API Logları</button>
+    
+    <button class="nav-btn" style="margin-top: auto; color: #f87171;" onclick="window.location.href='index.html'">
+        <i class="fas fa-power-off"></i> Paneli Kapat
+    </button>
+</aside>
+
+<main>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2 id="section-title" style="margin: 0; font-weight: 300; font-size: 28px;">Sistem Metrikleri</h2>
+        <div id="system-time" style="font-family: 'JetBrains Mono'; opacity: 0.5;">00:00:00</div>
     </div>
 
-    <main class="glass-card main-container">
-        <div class="top-bar">
-            <h2 style="font-weight: 200;"><i class="fas fa-user-shield"></i> System Control Center</h2>
-            <button onclick="window.location.href='index.html'" class="action-btn"><i class="fas fa-home"></i> Geri Dön</button>
+    <div class="admin-grid" id="metrics-content">
+        <div class="module-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <h3><i class="fas fa-bolt" style="color: #fbbf24;"></i> Ağ Performansı</h3>
+                <span id="speed-indicator" style="font-size: 9px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);">Bekleniyor</span>
+            </div>
+            <div style="margin-top: 25px; text-align: center;">
+                <h1 id="latency-display" class="latency-value" style="font-size: 54px; font-weight: 700; margin: 0;">-- <small style="font-size: 16px; opacity: 0.5;">ms</small></h1>
+                <p style="font-size: 11px; opacity: 0.4; margin-top: 15px; letter-spacing: 1px;">SON API YANIT SÜRESİ</p>
+            </div>
         </div>
 
-        <div class="admin-grid">
-            <div class="admin-card">
-                <h3><i class="fab fa-spotify"></i> Music Logic Editor</h3>
-                <p style="font-size: 12px; opacity: 0.5; margin-bottom: 20px;">Hava durumuna göre otomatik çalacak listeler.</p>
-                
-                <div class="control-group">
-                    <label>Güneşli Hava Playlist</label>
-                    <select id="sunny-list" onchange="saveAdminConfig()">
-                        <option value="37i9dQZF1DX3rxVfibe1L0">Sunny Day Hits</option>
-                        <option value="37i9dQZF1DX4uJUv7v9o0T">Summer Vibes</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>Yağmurlu Hava Playlist</label>
-                    <select id="rainy-list" onchange="saveAdminConfig()">
-                        <option value="37i9dQZF1DXat9LbNxY983">Rainy Day Jazz</option>
-                        <option value="37i9dQZF1DWSfMe9z79TYB">Lo-fi Garden</option>
-                    </select>
-                </div>
+        <div class="module-card" id="health-module">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3><i class="fas fa-heartbeat"></i> Sistem Sağlık</h3>
+                <span style="font-size: 9px; color: #10b981; border: 1px solid #10b981; padding: 2px 6px; border-radius: 4px; animation: pulse 2s infinite;">LIVE</span>
             </div>
-
-            <div class="admin-card">
-                <h3><i class="fas fa-robot"></i> AI Personality</h3>
-                <div class="control-group">
-                    <label>Konuşma Tonu</label>
-                    <select id="ai-tone" onchange="saveAdminConfig()">
-                        <option value="professional">Profesyonel / Ciddi</option>
-                        <option value="sarcastic">Esprili / Alaycı</option>
-                        <option value="motivator">Motive Edici</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>AI Yanıt Uzunluğu</label>
-                    <input type="range" min="1" max="100" value="50">
-                </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <div id="health-led" style="width: 12px; height: 12px; border-radius: 50%; background: #10b981; margin: 0 auto 10px; box-shadow: 0 0 10px #10b981;"></div>
+                <h4 id="health-status" style="margin: 5px 0; font-family: 'JetBrains Mono'; color: #10b981; font-size: 14px;">SİSTEM OPTİMAL</h4>
+                <p id="error-count" style="font-size: 10px; opacity: 0.5;">0 KRİTİK HATA</p>
             </div>
+        </div>
 
-            <div class="admin-card">
-                <h3><i class="fas fa-palette"></i> Visual Lab</h3>
-                <div class="control-group">
-                    <label>Glassmorphism Blur Şiddeti</label>
-                    <input type="range" id="blur-range" min="0" max="100" value="60" oninput="updateLivePreview()">
+        <div class="module-card">
+            <h3><i class="fas fa-satellite"></i> Veri Kaynağı</h3>
+            <div style="margin-top: 20px; display: flex; align-items: center; gap: 15px;">
+                <div style="width: 35px; height: 35px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #3b82f6;">
+                    <i class="fas fa-cloud-sun"></i>
                 </div>
-                <div class="control-group">
-                    <label>Neon Işık Gücü</label>
-                    <input type="range" id="glow-range" min="0" max="100" value="40" oninput="updateLivePreview()">
-                </div>
-            </div>
-
-            <div class="admin-card">
-                <span class="status-pill">Live</span>
-                <h3><i class="fas fa-chart-line"></i> API & Traffic</h3>
-                <div style="margin-top: 20px;">
-                    <p style="font-size: 13px;">OpenWeather Usage: <span style="color: var(--main-theme);">84%</span></p>
-                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 5px;">
-                        <div style="width: 84%; height: 100%; background: var(--main-theme); border-radius: 10px;"></div>
-                    </div>
-                </div>
-                <div style="margin-top: 20px;">
-                    <p style="font-size: 13px;">En Çok Aranan: <strong>İstanbul, London</strong></p>
+                <div>
+                    <div style="font-size: 13px; font-weight: bold;">OpenWeather API</div>
+                    <div style="font-size: 11px; opacity: 0.5;">v2.5 Connected</div>
                 </div>
             </div>
         </div>
-    </main>
+        
+        <div class="module-card" style="grid-column: span 2;">
+            <h3><i class="fas fa-wave-square"></i> Canlı Gecikme Analizi</h3>
+            <div style="height: 120px; margin-top: 15px;">
+                <canvas id="latencyChart"></canvas>
+            </div>
+        </div>
 
-    <script src="admin.js"></script>
+        <div class="module-card" style="grid-column: span 2;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3><i class="fas fa-terminal"></i> System Terminal</h3>
+                <button onclick="clearLogs()" style="background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); color: #f87171; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: bold;">TEMİZLE</button>
+            </div>
+            <div id="terminal-screen" style="background: #000; padding: 15px; border-radius: 8px 8px 0 0; height: 280px; overflow-y: auto; border: 1px solid var(--border); font-size: 12px; position: relative;"></div>
+            <div style="display: flex; background: #050505; border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; align-items: center; padding: 0 15px;">
+                <span style="color: var(--accent); font-family: 'JetBrains Mono'; margin-right: 10px;">$</span>
+                <input type="text" id="terminal-input" placeholder="Komut yazın... (/help)" style="flex: 1; background: transparent; border: none; color: #fff; padding: 12px 0; font-family: 'JetBrains Mono'; outline: none;" onkeypress="if(event.key === 'Enter') { handleTerminalCommand(this); }">
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-grid" id="firewall-content" style="display: none;">
+        
+        <div class="module-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3><i class="fas fa-hammer"></i> Çekirdek Erişimi</h3>
+                <span id="security-badge" class="badge-safe">GÜVENLİ</span>
+            </div>
+            
+            <div class="security-control-box">
+                <div class="control-info">
+                    <strong>Bakım Modu (Lockdown)</strong>
+                    <p>Aktif edildiğinde tüm dış API istekleri durdurulur.</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="maintenance-toggle" onchange="toggleSecurityMode(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div id="maintenance-controls" style="display: none; margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px dashed rgba(16, 185, 129, 0.3);">
+    <h4 style="color: #10b981; margin-bottom: 15px; font-size: 14px;">🛠 CANLI YAYIN KONTROLÜ</h4>
+    
+    <div style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <label style="font-size: 12px; opacity: 0.7;">İLERLEME DURUMU</label>
+            <span id="progress-val" style="color: #10b981; font-weight: bold;">0%</span>
+        </div>
+        <input type="range" id="progress-slider" min="0" max="100" value="0" 
+               style="width: 100%; accent-color: #10b981; cursor: pointer;"
+               oninput="updateLiveProgress(this.value)">
+    </div>
+
+    <div>
+        <label style="display: block; font-size: 12px; opacity: 0.7; margin-bottom: 8px;">KALAN SÜRE MESAJI</label>
+        <input type="text" id="eta-input" placeholder="Örn: 2 DAKİKA" 
+               style="width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px; border-radius: 6px; font-size: 13px;"
+               onkeyup="updateLiveETA(this.value)">
+    </div>
+</div>
+
+        <div class="module-card">
+            <h3><i class="fas fa-user-secret"></i> Canlı Erişim Kayıtları</h3>
+            <div id="access-logs" class="mini-log-list">
+                <div class="log-entry"><span class="log-time">12:04</span> <span class="log-ip">192.168.1.1</span> <span class="log-status success">OK</span></div>
+                <div class="log-entry"><span class="log-time">12:01</span> <span class="log-ip">45.22.11.9</span> <span class="log-status blocked">BLOCKED</span></div>
+                <div class="log-entry"><span class="log-time">11:58</span> <span class="log-ip">172.16.0.45</span> <span class="log-status success">OK</span></div>
+            </div>
+        </div>
+
+        <div class="module-card">
+            <h3><i class="fas fa-shield-alt"></i> Filtreleme Kuralları</h3>
+            <div class="security-stats">
+                <div class="stat-item"><span>SQL Injection Koruması</span> <span class="stat-value active">AKTİF</span></div>
+                <div class="stat-item"><span>DDoS Kalkanı</span> <span class="stat-value active">AKTİF</span></div>
+                <div class="stat-item"><span>IP Kara Liste</span> <span class="stat-value">128 Kayıt</span></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+
+<script src="admin.js"></script>
+<script>
+    // Saat Güncelleme
+    setInterval(() => {
+        const timeEl = document.getElementById('system-time');
+        if(timeEl) timeEl.innerText = new Date().toLocaleTimeString('tr-TR');
+    }, 1000);
+</script>
 </body>
 </html>
